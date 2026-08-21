@@ -1,7 +1,7 @@
 name: noor_quran_masjid_mode
 description: Noor Quran — Masjid Mode Android application.
 publish_to: "none"
-version: 1.0.3+4
+version: 1.0.4+5
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
