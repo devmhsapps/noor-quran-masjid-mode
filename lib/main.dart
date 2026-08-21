@@ -390,7 +390,7 @@ class _PermissionRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) => OutlinedButton.icon(
         onPressed: onLocationTap,
-        icon: Icon(locationGranted ? Icons.location_on_rounded : Icons.location_outlined),
+        icon: Icon(locationGranted ? Icons.location_on_rounded : Icons.location_on_outlined),
         label: Text(locationGranted ? 'الموقع مفعّل' : 'تحديد الموقع لمواقيت الصلاة'),
         style: OutlinedButton.styleFrom(foregroundColor: const Color(0xFF0B3D2E), side: const BorderSide(color: Color(0xFFD9DED6)), padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
       );

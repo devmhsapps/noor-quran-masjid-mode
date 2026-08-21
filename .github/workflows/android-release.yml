@@ -22,7 +22,9 @@ jobs:
         with:
           channel: stable
       - name: Generate Android runner
-        run: flutter create --platforms=android --project-name noor_quran_masjid_mode --org com.devmhs .
+        run: |
+          flutter create --platforms=android --project-name noor_quran_masjid_mode --org com.devmhs .
+          rm -f test/widget_test.dart
       - name: Install Android native Masjid Mode code
         run: |
           cp tool/android/app/src/main/AndroidManifest.xml android/app/src/main/AndroidManifest.xml

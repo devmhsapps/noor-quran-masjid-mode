@@ -46,7 +46,7 @@ class _IslamicPatternPainter extends CustomPainter {
         canvas.save();
         canvas.translate(center.dx, center.dy);
         canvas.rotate(math.pi / 4);
-        canvas.drawRect(const Rect.fromCenter(center: Offset.zero, width: 30, height: 30), line);
+        canvas.drawRect(Rect.fromCenter(center: Offset.zero, width: 30, height: 30), line);
         canvas.restore();
       }
     }
