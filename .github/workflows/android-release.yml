@@ -32,8 +32,12 @@ jobs:
           cp tool/android/app/src/main/kotlin/com/devmhs/noor_quran_masjid_mode/*.kt android/app/src/main/kotlin/com/devmhs/noor_quran_masjid_mode/
           if [ -f android/app/build.gradle.kts ]; then
             sed -i 's/minSdk = flutter.minSdkVersion/minSdk = 23/' android/app/build.gradle.kts
+            sed -i '/targetCompatibility = JavaVersion.VERSION_/a\        isCoreLibraryDesugaringEnabled = true' android/app/build.gradle.kts
+            printf '\ndependencies {\n    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")\n}\n' >> android/app/build.gradle.kts
           else
             sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 23/' android/app/build.gradle
+            sed -i '/targetCompatibility JavaVersion.VERSION_/a\        coreLibraryDesugaringEnabled true' android/app/build.gradle
+            printf '\ndependencies {\n    coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:2.1.5"\n}\n' >> android/app/build.gradle
           fi
       - name: Install dependencies and run tests
         run: |
