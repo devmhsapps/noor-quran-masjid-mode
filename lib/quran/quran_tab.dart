@@ -14,6 +14,14 @@ class _QuranTabState extends State<QuranTab> {
   late final Future<List<QuranSurah>> _surahs = QuranRepository.load();
   final _search = TextEditingController();
   String _query = '';
+  int? _lastSurah;
+  int? _lastVerse;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLastPosition();
+  }
 
   @override
   void dispose() {
@@ -21,8 +29,18 @@ class _QuranTabState extends State<QuranTab> {
     super.dispose();
   }
 
-  void _openReader(QuranSurah surah, {int? verse}) {
-    Navigator.of(context).push(
+  Future<void> _loadLastPosition() async {
+    final preferences = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        _lastSurah = preferences.getInt('quran_last_surah');
+        _lastVerse = preferences.getInt('quran_last_verse');
+      });
+    }
+  }
+
+  Future<void> _openReader(QuranSurah surah, {int? verse}) async {
+    await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => Directionality(
           textDirection: TextDirection.rtl,
@@ -30,6 +48,7 @@ class _QuranTabState extends State<QuranTab> {
         ),
       ),
     );
+    await _loadLastPosition();
   }
 
   @override
@@ -105,22 +124,39 @@ class _QuranTabState extends State<QuranTab> {
                         );
                       },
                     )
-                  : ListView.separated(
+                  : ListView(
                       padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
-                      itemCount: surahs.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 8),
-                      itemBuilder: (_, index) {
-                        final surah = surahs[index];
-                        return Card(
-                          child: ListTile(
-                            onTap: () => _openReader(surah),
-                            leading: CircleAvatar(child: Text('${surah.number}')),
-                            title: Text(surah.name, style: const TextStyle(fontWeight: FontWeight.w900)),
-                            subtitle: Text('${surah.verses.length} آية • ${surah.revelationType == 'meccan' ? 'مكية' : 'مدنية'}'),
-                            trailing: const Icon(Icons.chevron_left_rounded),
+                      children: [
+                        if (_lastSurah != null)
+                          Card(
+                            color: theme.colorScheme.primaryContainer,
+                            child: ListTile(
+                              onTap: () {
+                                final surah = surahs.firstWhere((item) => item.number == _lastSurah);
+                                _openReader(surah, verse: _lastVerse);
+                              },
+                              leading: const CircleAvatar(child: Icon(Icons.play_arrow_rounded)),
+                              title: const Text('متابعة القراءة', style: TextStyle(fontWeight: FontWeight.w900)),
+                              subtitle: Text('السورة ${surahs.firstWhere((item) => item.number == _lastSurah).name} • الآية ${_lastVerse ?? 1}'),
+                              trailing: const Icon(Icons.chevron_left_rounded),
+                            ),
                           ),
-                        );
-                      },
+                        if (_lastSurah != null) const SizedBox(height: 10),
+                        ...surahs.map(
+                          (surah) => Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Card(
+                              child: ListTile(
+                                onTap: () => _openReader(surah),
+                                leading: CircleAvatar(child: Text('${surah.number}')),
+                                title: Text(surah.name, style: const TextStyle(fontWeight: FontWeight.w900)),
+                                subtitle: Text('${surah.verses.length} آية • ${surah.revelationType == 'meccan' ? 'مكية' : 'مدنية'}'),
+                                trailing: const Icon(Icons.chevron_left_rounded),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
             ),
           ],
@@ -231,7 +267,12 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
                     if (bookmarked) const Icon(Icons.bookmark_rounded, size: 18, color: Color(0xFFC58A28)),
                   ]),
                   const SizedBox(height: 9),
-                  Text(verse.text, textDirection: TextDirection.rtl, textAlign: TextAlign.right, style: TextStyle(fontSize: _fontSize, height: 2.05, fontWeight: FontWeight.w500)),
+                  Text(
+                    verse.text,
+                    textDirection: TextDirection.rtl,
+                    textAlign: TextAlign.right,
+                    style: TextStyle(fontFamily: 'AmiriQuran', fontSize: _fontSize, height: 2.05),
+                  ),
                 ],
               ),
             ),

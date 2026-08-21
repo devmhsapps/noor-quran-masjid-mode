@@ -12,6 +12,11 @@
 
 تُضم بيانات السور والآيات والنص العثماني داخل أصول التطبيق. تحفظ العلامات وآخر موضع والملاحظات والختمات في ذاكرة الجهاز. البحث يكون في النص المحلي، فلا يحتاج المستخدم شبكة للقراءة أو البحث.
 
+## خط القراءة
+
+يستخدم القارئ خط Amiri Quran من مشروع Amiri المفتوح. يصفه مصدره بأنه خط عربي نسخي للكتب والنصوص المتصلة، ومتاح تحت رخصة Open Font License؛ وقد صُمم بملاءمة جيدة لصف الآيات.[2]
+
 ## المرجع
 
 [1]: https://github.com/asim/quran-json-arabic "quran-json-arabic — source, provenance and CC BY-SA 4.0 license"
+[2]: https://github.com/aliftype/amiri "Amiri — Open Font License"

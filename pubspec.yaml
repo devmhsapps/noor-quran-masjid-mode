@@ -26,6 +26,10 @@ flutter:
   assets:
     - assets/images/app_icon.png
     - assets/data/quran.json
+  fonts:
+    - family: AmiriQuran
+      fonts:
+        - asset: assets/fonts/AmiriQuran.ttf
 
 flutter_launcher_icons:
   android: true

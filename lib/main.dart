@@ -584,13 +584,13 @@ class _MueenShellState extends State<MueenShell> {
   @override
   Widget build(BuildContext context) {
     final screens = [
-      _HomeTab(city: _city, onOpenMasjid: () => _openPage(const MasjidModeScreen()), onOpenPrayer: () => setState(() => _selectedIndex = 3), onOpenQuran: () => setState(() => _selectedIndex = 1)),
-      const QuranTab(),
-      const _WirdTab(),
+      _HomeTab(city: _city, onOpenMasjid: () => _openPage(const MasjidModeScreen()), onOpenPrayer: () => setState(() => _selectedIndex = 1), onOpenQuran: () => setState(() => _selectedIndex = 2)),
       _PrayerTab(city: _city, onChooseCity: _chooseCity),
+      const QuranTab(),
       _DhikrTab(onOpenReminders: () => _openPage(const ReminderScreen())),
+      _MoreTab(onOpenSupport: () => _openPage(const SupportScreen()), onOpenSupportUs: () => _openPage(const SupportUsScreen())),
     ];
-    const titles = ['الرئيسية', 'المصحف', 'وردي', 'صلاتي', 'الأذكار'];
+    const titles = ['الرئيسية', 'صلاتي', 'المصحف', 'الأذكار', 'المزيد'];
 
     return Scaffold(
       endDrawer: _MueenDrawer(
@@ -631,10 +631,10 @@ class _MueenShellState extends State<MueenShell> {
         onDestinationSelected: (value) => setState(() => _selectedIndex = value),
         destinations: const [
           NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home_rounded), label: 'الرئيسية'),
-          NavigationDestination(icon: Icon(Icons.menu_book_outlined), selectedIcon: Icon(Icons.menu_book_rounded), label: 'المصحف'),
-          NavigationDestination(icon: Icon(Icons.auto_graph_outlined), selectedIcon: Icon(Icons.auto_graph_rounded), label: 'وردي'),
           NavigationDestination(icon: Icon(Icons.explore_outlined), selectedIcon: Icon(Icons.explore_rounded), label: 'صلاتي'),
+          NavigationDestination(icon: Icon(Icons.menu_book_outlined), selectedIcon: Icon(Icons.menu_book_rounded), label: 'المصحف'),
           NavigationDestination(icon: Icon(Icons.spa_outlined), selectedIcon: Icon(Icons.spa_rounded), label: 'الأذكار'),
+          NavigationDestination(icon: Icon(Icons.grid_view_rounded), selectedIcon: Icon(Icons.grid_view_rounded), label: 'المزيد'),
         ],
       ),
     );
@@ -703,24 +703,29 @@ class _HomeTab extends StatelessWidget {
   }
 }
 
-class _WirdTab extends StatelessWidget {
-  const _WirdTab();
+class _MoreTab extends StatelessWidget {
+  const _MoreTab({required this.onOpenSupport, required this.onOpenSupportUs});
+
+  final VoidCallback onOpenSupport;
+  final VoidCallback onOpenSupportUs;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return ListView(padding: const EdgeInsets.fromLTRB(20, 8, 20, 24), children: [
       _MueenCard(color: theme.colorScheme.primaryContainer, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text('وردك يبدأ من نيتك', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+        const Text('رحلتك في مَعين', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
         const SizedBox(height: 8),
-        const Text('ضع هدفاً بسيطاً للقراءة أو الحفظ، ثم راجعه بهدوء من دون منافسة أو ضغط.'),
+        const Text('أدوات القراءة والتقويم والقبلة والدعم في مكان واحد مرتب.'),
         const SizedBox(height: 16),
-        FilledButton(onPressed: () => _showGentleMessage(context, 'ستتمكن من إنشاء وردك بعد إضافة المصحف المحلي.'), child: const Text('إنشاء ورد جديد')),
+        FilledButton.icon(onPressed: () => _showGentleMessage(context, 'ستتمكن من إنشاء وردك بعد إضافة أدوات الختمات.'), icon: const Icon(Icons.auto_graph_rounded), label: const Text('إدارة وردي')),
       ])),
       const SizedBox(height: 16),
-      const _FeatureRow(icon: Icons.flag_outlined, title: 'ختماتي', detail: 'تابع أكثر من ختمة بالطريقة التي تختارها.'),
-      const _FeatureRow(icon: Icons.psychology_alt_outlined, title: 'الحفظ والمراجعة', detail: 'سجل المحفوظ وما يحتاج مراجعة.'),
-      const _FeatureRow(icon: Icons.insights_outlined, title: 'تقدم هادئ', detail: 'إحصاءاتك محفوظة محلياً لك وحدك.'),
+      const _FeatureRow(icon: Icons.flag_outlined, title: 'وردي وختماتي', detail: 'تابع القراءة والحفظ والمراجعة محلياً.'),
+      const _FeatureRow(icon: Icons.calendar_month_outlined, title: 'التقويم الهجري', detail: 'التاريخ والمناسبات الهجرية والميلادية.'),
+      const _FeatureRow(icon: Icons.explore_outlined, title: 'القبلة', detail: 'اتجاه الكعبة مع معايرة المستشعر.'),
+      _FeatureRow(icon: Icons.support_agent_rounded, title: 'الدعم الفني', detail: 'أرسل طلبك وتابع الرد عند ربط الخدمة.', onTap: onOpenSupport),
+      _FeatureRow(icon: Icons.volunteer_activism_outlined, title: 'ادعمنا', detail: 'دعم اختياري لا يظهر تلقائياً.', onTap: onOpenSupportUs),
     ]);
   }
 }
@@ -1054,14 +1059,15 @@ class _ActionTile extends StatelessWidget {
 }
 
 class _FeatureRow extends StatelessWidget {
-  const _FeatureRow({required this.icon, required this.title, required this.detail});
+  const _FeatureRow({required this.icon, required this.title, required this.detail, this.onTap});
   final IconData icon;
   final String title;
   final String detail;
+  final VoidCallback? onTap;
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.only(bottom: 10),
-    child: _MueenCard(child: ListTile(contentPadding: EdgeInsets.zero, leading: Icon(icon, color: Theme.of(context).colorScheme.primary), title: Text(title, style: const TextStyle(fontWeight: FontWeight.w800)), subtitle: Text(detail), trailing: const Icon(Icons.chevron_left_rounded))),
+    child: _MueenCard(child: ListTile(contentPadding: EdgeInsets.zero, leading: Icon(icon, color: Theme.of(context).colorScheme.primary), title: Text(title, style: const TextStyle(fontWeight: FontWeight.w800)), subtitle: Text(detail), trailing: const Icon(Icons.chevron_left_rounded), onTap: onTap)),
   );
 }
 
