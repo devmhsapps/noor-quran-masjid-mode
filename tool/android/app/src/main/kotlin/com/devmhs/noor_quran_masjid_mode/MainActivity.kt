@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
-import android.os.PowerManager
 import android.provider.Settings
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -43,12 +42,6 @@ class MainActivity : FlutterActivity() {
                 }
                 result.success(null)
             }
-            "requestBatteryOptimizationAccess" -> {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !isBatteryUnrestricted()) {
-                    startActivity(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:$packageName")))
-                }
-                result.success(null)
-            }
             "start" -> {
                 if (!notificationManager.isNotificationPolicyAccessGranted) {
                     result.error("DND_ACCESS_REQUIRED", "Notification policy access was not granted", null)
@@ -56,10 +49,6 @@ class MainActivity : FlutterActivity() {
                 }
                 if (!MasjidModeScheduler.canScheduleExactAlarm(this)) {
                     result.error("EXACT_ALARM_ACCESS_REQUIRED", "Exact alarm access was not granted", null)
-                    return
-                }
-                if (!isBatteryUnrestricted()) {
-                    result.error("BATTERY_ACCESS_REQUIRED", "Battery optimization is still enabled", null)
                     return
                 }
                 val requested = call.argument<Int>("seconds") ?: 0
@@ -96,19 +85,12 @@ class MainActivity : FlutterActivity() {
         preferences.edit().clear().apply()
     }
 
-    private fun isBatteryUnrestricted(): Boolean {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return true
-        val manager = getSystemService(Context.POWER_SERVICE) as PowerManager
-        return manager.isIgnoringBatteryOptimizations(packageName)
-    }
-
     private fun statusPayload(): Map<String, Any?> {
         val active = preferences.getBoolean(MasjidModeService.KEY_ACTIVE, false)
         return mapOf(
             "active" to active,
             "dndAccessGranted" to notificationManager.isNotificationPolicyAccessGranted,
             "exactAlarmGranted" to MasjidModeScheduler.canScheduleExactAlarm(this),
-            "batteryUnrestricted" to isBatteryUnrestricted(),
             "endsAt" to if (active) preferences.getLong(MasjidModeService.KEY_ENDS_AT, 0L) else null,
         )
     }

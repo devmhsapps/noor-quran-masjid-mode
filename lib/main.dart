@@ -56,7 +56,6 @@ class _MasjidModeScreenState extends State<MasjidModeScreen>
     active: false,
     dndAccessGranted: false,
     exactAlarmGranted: false,
-    batteryUnrestricted: false,
   );
   String _message = 'يرجى منح الصلاحيات اللازمة ثم اختيار وقت الجلسة.';
   int _now = DateTime.now().millisecondsSinceEpoch;
@@ -141,7 +140,7 @@ class _MasjidModeScreenState extends State<MasjidModeScreen>
 
   Future<void> _startOrRequestAccess() async {
     if (_busy) return;
-    if (_setupComplete && _notificationsGranted && _status.dndAccessGranted && _status.exactAlarmGranted && _status.batteryUnrestricted) {
+    if (_setupComplete && _notificationsGranted && _status.dndAccessGranted && _status.exactAlarmGranted) {
       await _activateSession();
       return;
     }
@@ -160,7 +159,7 @@ class _MasjidModeScreenState extends State<MasjidModeScreen>
             child: AlertDialog(
               title: const Text('إعداد وضع الجامع'),
               content: const Text(
-                'لتفعيل الوضع الصامت المؤقت واستعادته حتى بعد سحب التطبيق، يحتاج التطبيق إلى: الإشعارات، التحكم في عدم الإزعاج، والمنبّه الدقيق، وإيقاف تقييد البطارية لهذا التطبيق. لا نطلب الموقع إلا عند إعداد مواقيت الصلاة لاحقاً.',
+                'لتفعيل الوضع الصامت المؤقت واستعادته حتى بعد سحب التطبيق، يحتاج التطبيق إلى: الإشعارات، التحكم في عدم الإزعاج، والمنبّه الدقيق. لا نطلب الموقع إلا عند إعداد مواقيت الصلاة لاحقاً.',
                 style: TextStyle(height: 1.6),
               ),
               actions: [
@@ -201,12 +200,6 @@ class _MasjidModeScreenState extends State<MasjidModeScreen>
       return;
     }
 
-    if (!_status.batteryUnrestricted) {
-      await MasjidModeChannel.requestBatteryOptimizationAccess();
-      if (mounted) setState(() => _message = 'لضمان رجوع الصوت في الوقت المحدد، اختر «السماح» أو «غير مقيّد» من إعداد البطارية ثم ارجع للتطبيق.');
-      return;
-    }
-
     final preferences = await SharedPreferences.getInstance();
     await preferences.setBool('masjid_permission_setup_complete', true);
     if (!mounted) return;
@@ -220,7 +213,7 @@ class _MasjidModeScreenState extends State<MasjidModeScreen>
   }
 
   Future<void> _activateSession() async {
-    if (!_status.dndAccessGranted || !_status.exactAlarmGranted || !_status.batteryUnrestricted) {
+    if (!_status.dndAccessGranted || !_status.exactAlarmGranted) {
       setState(() => _setupComplete = false);
       await _startOrRequestAccess();
       return;
@@ -302,7 +295,6 @@ class _MasjidModeScreenState extends State<MasjidModeScreen>
                 active: active,
                 dndGranted: _status.dndAccessGranted,
                 exactAlarmGranted: _status.exactAlarmGranted,
-                batteryUnrestricted: _status.batteryUnrestricted,
                 time: display,
                 message: _message,
                 notificationsGranted: _notificationsGranted,
@@ -320,8 +312,8 @@ class _MasjidModeScreenState extends State<MasjidModeScreen>
                 width: double.infinity,
                 child: FilledButton.icon(
                   onPressed: _busy ? null : active ? _cancel : _startOrRequestAccess,
-                  icon: Icon(active ? Icons.close_rounded : !_status.dndAccessGranted ? Icons.settings_rounded : !_status.exactAlarmGranted ? Icons.alarm_add_rounded : !_status.batteryUnrestricted ? Icons.battery_charging_full_rounded : Icons.volume_off_rounded),
-                  label: Text(active ? 'إلغاء وضع الجامع' : !_status.dndAccessGranted ? 'منح صلاحية وضع الجامع' : !_status.exactAlarmGranted ? 'السماح بالمنبّه الدقيق' : !_status.batteryUnrestricted ? 'إعداد البطارية' : 'تفعيل وضع الجامع'),
+                  icon: Icon(active ? Icons.close_rounded : !_status.dndAccessGranted ? Icons.settings_rounded : !_status.exactAlarmGranted ? Icons.alarm_add_rounded : Icons.volume_off_rounded),
+                  label: Text(active ? 'إلغاء وضع الجامع' : !_status.dndAccessGranted ? 'منح صلاحية وضع الجامع' : !_status.exactAlarmGranted ? 'السماح بالمنبّه الدقيق' : 'تفعيل وضع الجامع'),
                   style: FilledButton.styleFrom(
                     backgroundColor: active ? const Color(0xFFB44949) : const Color(0xFF0B3D2E),
                     foregroundColor: Colors.white,
@@ -401,11 +393,10 @@ class _BrandMark extends StatelessWidget {
 }
 
 class _StatusCard extends StatelessWidget {
-  const _StatusCard({required this.active, required this.dndGranted, required this.exactAlarmGranted, required this.batteryUnrestricted, required this.time, required this.message, required this.notificationsGranted, required this.setupComplete});
+  const _StatusCard({required this.active, required this.dndGranted, required this.exactAlarmGranted, required this.time, required this.message, required this.notificationsGranted, required this.setupComplete});
   final bool active;
   final bool dndGranted;
   final bool exactAlarmGranted;
-  final bool batteryUnrestricted;
   final String time;
   final String message;
   final bool notificationsGranted;
@@ -419,7 +410,7 @@ class _StatusCard extends StatelessWidget {
         child: Column(
           children: [
             Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              _Pill(label: active ? 'مفعّل' : dndGranted && exactAlarmGranted && batteryUnrestricted ? 'جاهز' : 'صلاحية مطلوبة', color: active ? const Color(0xFFC58A28) : dndGranted && exactAlarmGranted && batteryUnrestricted ? const Color(0xFF2F7A4C) : const Color(0xFF66726D)),
+              _Pill(label: active ? 'مفعّل' : dndGranted && exactAlarmGranted ? 'جاهز' : 'صلاحية مطلوبة', color: active ? const Color(0xFFC58A28) : dndGranted && exactAlarmGranted ? const Color(0xFF2F7A4C) : const Color(0xFF66726D)),
               Text(active ? 'الوقت المتبقي' : 'المدة المختارة', style: const TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF18221F))),
             ]),
             const SizedBox(height: 20),
