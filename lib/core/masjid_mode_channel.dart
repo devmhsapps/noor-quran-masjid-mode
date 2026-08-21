@@ -5,12 +5,14 @@ class MasjidModeStatus {
     required this.active,
     required this.dndAccessGranted,
     required this.exactAlarmGranted,
+    required this.batteryUnrestricted,
     this.endsAt,
   });
 
   final bool active;
   final bool dndAccessGranted;
   final bool exactAlarmGranted;
+  final bool batteryUnrestricted;
   final int? endsAt;
 
   factory MasjidModeStatus.fromMap(Map<Object?, Object?> data) {
@@ -18,6 +20,7 @@ class MasjidModeStatus {
       active: data['active'] == true,
       dndAccessGranted: data['dndAccessGranted'] == true,
       exactAlarmGranted: data['exactAlarmGranted'] == true,
+      batteryUnrestricted: data['batteryUnrestricted'] == true,
       endsAt: data['endsAt'] as int?,
     );
   }
@@ -36,6 +39,9 @@ class MasjidModeChannel {
 
   static Future<void> requestExactAlarmAccess() =>
       _channel.invokeMethod<void>('requestExactAlarmAccess');
+
+  static Future<void> requestBatteryOptimizationAccess() =>
+      _channel.invokeMethod<void>('requestBatteryOptimizationAccess');
 
   static Future<MasjidModeStatus> start(int seconds) async {
     final data = await _channel.invokeMethod<Map<Object?, Object?>>(
