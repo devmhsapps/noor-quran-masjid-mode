@@ -1039,6 +1039,21 @@ class _MueenCard extends StatelessWidget {
   );
 }
 
+class _ChipLabel extends StatelessWidget {
+  const _ChipLabel({required this.label});
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+    decoration: BoxDecoration(
+      color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: .14),
+      borderRadius: BorderRadius.circular(20),
+    ),
+    child: Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
+  );
+}
+
 class _ActionTile extends StatelessWidget {
   const _ActionTile({required this.icon, required this.title, required this.subtitle, required this.onTap});
   final IconData icon;
