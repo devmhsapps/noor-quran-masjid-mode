@@ -52,6 +52,7 @@ class _MasjidModeScreenState extends State<MasjidModeScreen>
   MasjidModeStatus _status = const MasjidModeStatus(
     active: false,
     dndAccessGranted: false,
+    exactAlarmGranted: false,
   );
   String _message = 'يرجى منح الصلاحيات اللازمة ثم اختيار وقت الجلسة.';
   int _now = DateTime.now().millisecondsSinceEpoch;
@@ -135,6 +136,13 @@ class _MasjidModeScreenState extends State<MasjidModeScreen>
       return;
     }
 
+    if (!_status.exactAlarmGranted) {
+      await MasjidModeChannel.requestExactAlarmAccess();
+      if (!mounted) return;
+      setState(() => _message = 'من الإعدادات، اسمح بالمنبّه الدقيق حتى يستمر وضع الجامع بعد سحب التطبيق.');
+      return;
+    }
+
     if (!isValidSessionDuration(_selectedSeconds)) {
       setState(() => _message = 'اختر مدة من ثانية واحدة حتى 24 ساعة.');
       return;
@@ -210,6 +218,7 @@ class _MasjidModeScreenState extends State<MasjidModeScreen>
               _StatusCard(
                 active: active,
                 dndGranted: _status.dndAccessGranted,
+                exactAlarmGranted: _status.exactAlarmGranted,
                 time: display,
                 message: _message,
                 notificationsGranted: _notificationsGranted,
@@ -226,8 +235,8 @@ class _MasjidModeScreenState extends State<MasjidModeScreen>
                 width: double.infinity,
                 child: FilledButton.icon(
                   onPressed: _busy ? null : active ? _cancel : _startOrRequestAccess,
-                  icon: Icon(active ? Icons.close_rounded : _status.dndAccessGranted ? Icons.volume_off_rounded : Icons.settings_rounded),
-                  label: Text(active ? 'إلغاء وضع الجامع' : _status.dndAccessGranted ? 'تفعيل وضع الجامع' : 'منح صلاحية وضع الجامع'),
+                  icon: Icon(active ? Icons.close_rounded : !_status.dndAccessGranted ? Icons.settings_rounded : !_status.exactAlarmGranted ? Icons.alarm_add_rounded : Icons.volume_off_rounded),
+                  label: Text(active ? 'إلغاء وضع الجامع' : !_status.dndAccessGranted ? 'منح صلاحية وضع الجامع' : !_status.exactAlarmGranted ? 'السماح بالمنبّه الدقيق' : 'تفعيل وضع الجامع'),
                   style: FilledButton.styleFrom(
                     backgroundColor: active ? const Color(0xFFB44949) : const Color(0xFF0B3D2E),
                     foregroundColor: Colors.white,
@@ -310,9 +319,10 @@ class _BrandMark extends StatelessWidget {
 }
 
 class _StatusCard extends StatelessWidget {
-  const _StatusCard({required this.active, required this.dndGranted, required this.time, required this.message, required this.notificationsGranted});
+  const _StatusCard({required this.active, required this.dndGranted, required this.exactAlarmGranted, required this.time, required this.message, required this.notificationsGranted});
   final bool active;
   final bool dndGranted;
+  final bool exactAlarmGranted;
   final String time;
   final String message;
   final bool notificationsGranted;
@@ -325,7 +335,7 @@ class _StatusCard extends StatelessWidget {
         child: Column(
           children: [
             Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              _Pill(label: active ? 'مفعّل' : dndGranted ? 'جاهز' : 'صلاحية مطلوبة', color: active ? const Color(0xFFC58A28) : dndGranted ? const Color(0xFF2F7A4C) : const Color(0xFF66726D)),
+              _Pill(label: active ? 'مفعّل' : dndGranted && exactAlarmGranted ? 'جاهز' : 'صلاحية مطلوبة', color: active ? const Color(0xFFC58A28) : dndGranted && exactAlarmGranted ? const Color(0xFF2F7A4C) : const Color(0xFF66726D)),
               Text(active ? 'الوقت المتبقي' : 'المدة المختارة', style: const TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF18221F))),
             ]),
             const SizedBox(height: 20),

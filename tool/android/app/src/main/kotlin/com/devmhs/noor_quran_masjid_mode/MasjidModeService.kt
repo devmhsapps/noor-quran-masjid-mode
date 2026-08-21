@@ -27,6 +27,7 @@ class MasjidModeService : Service() {
         startForeground(NOTIFICATION_ID, buildNotification())
         when (intent?.action) {
             ACTION_CANCEL -> restoreAndStop(false)
+            ACTION_FINISH -> restoreAndStop(true)
             else -> scheduleRestore()
         }
         return START_NOT_STICKY
@@ -34,7 +35,6 @@ class MasjidModeService : Service() {
 
     override fun onDestroy() {
         restoreTask?.let(handler::removeCallbacks)
-        if (preferences.getBoolean(KEY_ACTIVE, false)) restorePreviousMode(false)
         super.onDestroy()
     }
 
@@ -62,6 +62,7 @@ class MasjidModeService : Service() {
         if (wasActive && notificationManager.isNotificationPolicyAccessGranted) {
             notificationManager.setInterruptionFilter(preferences.getInt(KEY_PREVIOUS_FILTER, NotificationManager.INTERRUPTION_FILTER_ALL))
         }
+        MasjidModeScheduler.cancel(this)
         preferences.edit().clear().apply()
         if (wasActive && announce) speakCompletion()
     }
@@ -111,7 +112,17 @@ class MasjidModeService : Service() {
         const val MAX_DURATION_SECONDS = 24 * 60 * 60
         const val ACTION_START = "com.devmhs.noor_quran.START"
         const val ACTION_CANCEL = "com.devmhs.noor_quran.CANCEL"
+        const val ACTION_FINISH = "com.devmhs.noor_quran.FINISH"
         private const val CHANNEL_ID = "masjid_mode"
         private const val NOTIFICATION_ID = 704
+
+        fun start(context: Context, action: String) {
+            val intent = Intent(context, MasjidModeService::class.java).setAction(action)
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                context.startForegroundService(intent)
+            } else {
+                context.startService(intent)
+            }
+        }
     }
 }

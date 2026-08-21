@@ -3,6 +3,7 @@ package com.devmhs.noor_quran_masjid_mode
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import io.flutter.embedding.android.FlutterActivity
@@ -35,9 +36,19 @@ class MainActivity : FlutterActivity() {
                 startActivity(Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS))
                 result.success(null)
             }
+            "requestExactAlarmAccess" -> {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, Uri.parse("package:$packageName")))
+                }
+                result.success(null)
+            }
             "start" -> {
                 if (!notificationManager.isNotificationPolicyAccessGranted) {
                     result.error("DND_ACCESS_REQUIRED", "Notification policy access was not granted", null)
+                    return
+                }
+                if (!MasjidModeScheduler.canScheduleExactAlarm(this)) {
+                    result.error("EXACT_ALARM_ACCESS_REQUIRED", "Exact alarm access was not granted", null)
                     return
                 }
                 val requested = call.argument<Int>("seconds") ?: 0
@@ -52,20 +63,16 @@ class MainActivity : FlutterActivity() {
                     .putInt(MasjidModeService.KEY_PREVIOUS_FILTER, notificationManager.currentInterruptionFilter)
                     .apply()
                 notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_NONE)
-                startModeService(MasjidModeService.ACTION_START)
+                MasjidModeScheduler.schedule(this, endsAt)
+                MasjidModeService.start(this, MasjidModeService.ACTION_START)
                 result.success(statusPayload())
             }
             "cancel" -> {
-                startModeService(MasjidModeService.ACTION_CANCEL)
+                MasjidModeService.start(this, MasjidModeService.ACTION_CANCEL)
                 result.success(null)
             }
             else -> result.notImplemented()
         }
-    }
-
-    private fun startModeService(action: String) {
-        val intent = Intent(this, MasjidModeService::class.java).setAction(action)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(intent) else startService(intent)
     }
 
     private fun restoreIfExpired() {
@@ -74,6 +81,7 @@ class MainActivity : FlutterActivity() {
         if (notificationManager.isNotificationPolicyAccessGranted) {
             notificationManager.setInterruptionFilter(preferences.getInt(MasjidModeService.KEY_PREVIOUS_FILTER, NotificationManager.INTERRUPTION_FILTER_ALL))
         }
+        MasjidModeScheduler.cancel(this)
         preferences.edit().clear().apply()
     }
 
@@ -82,6 +90,7 @@ class MainActivity : FlutterActivity() {
         return mapOf(
             "active" to active,
             "dndAccessGranted" to notificationManager.isNotificationPolicyAccessGranted,
+            "exactAlarmGranted" to MasjidModeScheduler.canScheduleExactAlarm(this),
             "endsAt" to if (active) preferences.getLong(MasjidModeService.KEY_ENDS_AT, 0L) else null,
         )
     }
