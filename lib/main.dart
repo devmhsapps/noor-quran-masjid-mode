@@ -65,6 +65,9 @@ class _MasjidModeScreenState extends State<MasjidModeScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _loadInitialState();
+    Timer(const Duration(milliseconds: 2200), () {
+      if (mounted) setState(() => _opening = false);
+    });
   }
 
   @override
@@ -262,7 +265,7 @@ class _MasjidModeScreenState extends State<MasjidModeScreen>
 
   @override
   Widget build(BuildContext context) {
-    if (_opening) return _OpeningPage(onStart: () => setState(() => _opening = false));
+    if (_opening) return const _OpeningPage();
 
     final active = _status.active && _remainingSeconds > 0;
     final display = active ? formatDuration(_remainingSeconds) : formatDuration(_selectedSeconds);
@@ -331,8 +334,7 @@ class _MasjidModeScreenState extends State<MasjidModeScreen>
 }
 
 class _OpeningPage extends StatelessWidget {
-  const _OpeningPage({required this.onStart});
-  final VoidCallback onStart;
+  const _OpeningPage();
 
   @override
   Widget build(BuildContext context) {
@@ -363,15 +365,13 @@ class _OpeningPage extends StatelessWidget {
                 const SizedBox(height: 8),
                 const Text('وضع الجامع الهادئ', style: TextStyle(color: Color(0xFFD9E8E0), fontSize: 14)),
                 const Spacer(flex: 3),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    onPressed: onStart,
-                    icon: const Icon(Icons.arrow_back_rounded),
-                    label: const Text('بدء التجربة'),
-                    style: FilledButton.styleFrom(backgroundColor: const Color(0xFFF8F5EE), foregroundColor: const Color(0xFF0B3D2E), padding: const EdgeInsets.symmetric(vertical: 17), textStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18))),
-                  ),
+                const SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: CircularProgressIndicator(color: Color(0xFFC58A28), strokeWidth: 2),
                 ),
+                const SizedBox(height: 14),
+                const Text('يرجى الانتظار', style: TextStyle(color: Color(0xFFD9E8E0), fontSize: 12)),
               ],
             ),
           ),

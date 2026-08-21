@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.media.MediaPlayer
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
@@ -68,6 +69,22 @@ class MasjidModeService : Service() {
     }
 
     private fun speakCompletion() {
+        val recordedVoice = resources.getIdentifier("masjid_mode_completion", "raw", packageName)
+        if (recordedVoice != 0) {
+            val player = MediaPlayer.create(this, recordedVoice)
+            player.setOnCompletionListener { completedPlayer -> completedPlayer.release() }
+            player.setOnErrorListener { failedPlayer, _, _ ->
+                failedPlayer.release()
+                speakWithSystemVoice()
+                true
+            }
+            player.start()
+            return
+        }
+        speakWithSystemVoice()
+    }
+
+    private fun speakWithSystemVoice() {
         lateinit var speaker: TextToSpeech
         speaker = TextToSpeech(applicationContext) { state ->
             if (state != TextToSpeech.SUCCESS) return@TextToSpeech
