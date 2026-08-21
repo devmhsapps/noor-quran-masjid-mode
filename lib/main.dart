@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/duration.dart';
 import 'core/masjid_mode_channel.dart';
@@ -49,6 +50,8 @@ class _MasjidModeScreenState extends State<MasjidModeScreen>
   bool _busy = false;
   bool _notificationsGranted = false;
   bool _locationGranted = false;
+  bool _setupComplete = false;
+  bool _setupInProgress = false;
   MasjidModeStatus _status = const MasjidModeStatus(
     active: false,
     dndAccessGranted: false,
@@ -76,17 +79,22 @@ class _MasjidModeScreenState extends State<MasjidModeScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _refreshStatus();
+    if (state == AppLifecycleState.resumed) {
+      _refreshStatus();
+      if (_setupInProgress) _continuePermissionSetup();
+    }
   }
 
   Future<void> _loadInitialState() async {
-    final notification = await Permission.notification.request();
+    final notification = await Permission.notification.status;
     final location = await Permission.locationWhenInUse.status;
+    final preferences = await SharedPreferences.getInstance();
     await _refreshStatus();
     if (!mounted) return;
     setState(() {
       _notificationsGranted = notification.isGranted;
       _locationGranted = location.isGranted;
+      _setupComplete = preferences.getBool('masjid_permission_setup_complete') ?? false;
     });
   }
 
@@ -129,17 +137,82 @@ class _MasjidModeScreenState extends State<MasjidModeScreen>
 
   Future<void> _startOrRequestAccess() async {
     if (_busy) return;
+    if (_setupComplete && _notificationsGranted && _status.dndAccessGranted && _status.exactAlarmGranted) {
+      await _activateSession();
+      return;
+    }
+
+    final confirmed = await _showPermissionIntroduction();
+    if (!confirmed || !mounted) return;
+    setState(() => _setupInProgress = true);
+    await _continuePermissionSetup();
+  }
+
+  Future<bool> _showPermissionIntroduction() async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => Directionality(
+            textDirection: TextDirection.rtl,
+            child: AlertDialog(
+              title: const Text('إعداد وضع الجامع'),
+              content: const Text(
+                'لتفعيل الوضع الصامت المؤقت واستعادته حتى بعد سحب التطبيق، يحتاج التطبيق إلى: الإشعارات، التحكم في عدم الإزعاج، والمنبّه الدقيق. لا نطلب الموقع إلا عند إعداد مواقيت الصلاة لاحقاً.',
+                style: TextStyle(height: 1.6),
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('لاحقاً')),
+                FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('متابعة الإعداد')),
+              ],
+            ),
+          ),
+        ) ??
+        false;
+  }
+
+  Future<void> _continuePermissionSetup() async {
+    final notification = await Permission.notification.status;
+    if (!notification.isGranted) {
+      final requested = await Permission.notification.request();
+      if (!requested.isGranted) {
+        if (mounted) setState(() {
+          _setupInProgress = false;
+          _notificationsGranted = false;
+          _message = 'تحتاج إلى السماح بالإشعارات لإكمال إعداد وضع الجامع.';
+        });
+        return;
+      }
+    }
+
+    await _refreshStatus();
+    if (!mounted) return;
     if (!_status.dndAccessGranted) {
       await MasjidModeChannel.requestDndAccess();
-      if (!mounted) return;
-      setState(() => _message = 'من الإعدادات، اسمح للتطبيق بالتحكم في عدم الإزعاج ثم ارجع للتطبيق.');
+      if (mounted) setState(() => _message = 'اسمح بالتحكم في عدم الإزعاج من إعدادات Android ثم ارجع للتطبيق.');
       return;
     }
 
     if (!_status.exactAlarmGranted) {
       await MasjidModeChannel.requestExactAlarmAccess();
-      if (!mounted) return;
-      setState(() => _message = 'من الإعدادات، اسمح بالمنبّه الدقيق حتى يستمر وضع الجامع بعد سحب التطبيق.');
+      if (mounted) setState(() => _message = 'اسمح بالمنبّه الدقيق حتى ينتهي وضع الجامع حتى بعد سحب التطبيق.');
+      return;
+    }
+
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setBool('masjid_permission_setup_complete', true);
+    if (!mounted) return;
+    setState(() {
+      _setupInProgress = false;
+      _setupComplete = true;
+      _notificationsGranted = true;
+      _message = 'اكتمل الإعداد. يمكنك الآن تفعيل وضع الجامع.';
+    });
+    await _activateSession();
+  }
+
+  Future<void> _activateSession() async {
+    if (!_status.dndAccessGranted || !_status.exactAlarmGranted) {
+      setState(() => _setupComplete = false);
+      await _startOrRequestAccess();
       return;
     }
 
@@ -222,6 +295,7 @@ class _MasjidModeScreenState extends State<MasjidModeScreen>
                 time: display,
                 message: _message,
                 notificationsGranted: _notificationsGranted,
+                setupComplete: _setupComplete,
               ),
               const SizedBox(height: 18),
               if (!active) _TimeInputs(hours: _hours, minutes: _minutes, seconds: _seconds),
@@ -319,13 +393,14 @@ class _BrandMark extends StatelessWidget {
 }
 
 class _StatusCard extends StatelessWidget {
-  const _StatusCard({required this.active, required this.dndGranted, required this.exactAlarmGranted, required this.time, required this.message, required this.notificationsGranted});
+  const _StatusCard({required this.active, required this.dndGranted, required this.exactAlarmGranted, required this.time, required this.message, required this.notificationsGranted, required this.setupComplete});
   final bool active;
   final bool dndGranted;
   final bool exactAlarmGranted;
   final String time;
   final String message;
   final bool notificationsGranted;
+  final bool setupComplete;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -348,6 +423,10 @@ class _StatusCard extends StatelessWidget {
               const SizedBox(width: 6),
               Text(notificationsGranted ? 'الإشعارات مفعّلة' : 'الإشعارات غير مفعّلة', style: const TextStyle(fontSize: 12, color: Color(0xFF66726D))),
             ]),
+            if (!setupComplete) const Padding(
+              padding: EdgeInsets.only(top: 8),
+              child: Text('عند أول تفعيل، سيشرح التطبيق الصلاحيات المطلوبة خطوة بخطوة.', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, color: Color(0xFF66726D))),
+            ),
           ],
         ),
       );
