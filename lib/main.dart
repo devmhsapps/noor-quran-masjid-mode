@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/duration.dart';
 import 'core/masjid_mode_channel.dart';
+import 'quran/quran_tab.dart';
 import 'widgets/islamic_background.dart';
 
 void main() => runApp(const MueenApp());
@@ -584,7 +585,7 @@ class _MueenShellState extends State<MueenShell> {
   Widget build(BuildContext context) {
     final screens = [
       _HomeTab(city: _city, onOpenMasjid: () => _openPage(const MasjidModeScreen()), onOpenPrayer: () => setState(() => _selectedIndex = 3), onOpenQuran: () => setState(() => _selectedIndex = 1)),
-      const _QuranTab(),
+      const QuranTab(),
       const _WirdTab(),
       _PrayerTab(city: _city, onChooseCity: _chooseCity),
       _DhikrTab(onOpenReminders: () => _openPage(const ReminderScreen())),
@@ -699,31 +700,6 @@ class _HomeTab extends StatelessWidget {
         )),
       ],
     );
-  }
-}
-
-class _QuranTab extends StatelessWidget {
-  const _QuranTab();
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return ListView(padding: const EdgeInsets.fromLTRB(20, 8, 20, 24), children: [
-      _MueenCard(color: theme.colorScheme.primaryContainer, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('المصحف المحلي', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
-        const SizedBox(height: 6),
-        const Text('سيعمل نص القرآن، البحث، العلامات وآخر موضع دون اتصال بالإنترنت.'),
-        const SizedBox(height: 14),
-        FilledButton.icon(onPressed: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('ستظهر السور هنا عند إضافة حزمة المصحف المحلية.'))), icon: const Icon(Icons.menu_book_rounded), label: const Text('فتح الفهرس')),
-      ])),
-      const SizedBox(height: 16),
-      Text('أدوات القراءة', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
-      const SizedBox(height: 10),
-      const _FeatureRow(icon: Icons.bookmark_outline_rounded, title: 'العلامات المرجعية', detail: 'احفظ مواضعك المهمة.'),
-      const _FeatureRow(icon: Icons.edit_note_rounded, title: 'ملاحظات خاصة', detail: 'تدبرك يبقى في هاتفك.'),
-      const _FeatureRow(icon: Icons.search_rounded, title: 'بحث في القرآن', detail: 'ابحث داخل النص المحلي.'),
-      const _FeatureRow(icon: Icons.text_fields_rounded, title: 'أسلوب القراءة', detail: 'الخط والحجم والسمة حسب راحتك.'),
-    ]);
   }
 }
 
@@ -864,7 +840,7 @@ class _MueenDrawer extends StatelessWidget {
         _DrawerItem(icon: Icons.volunteer_activism_outlined, title: 'ادعمنا', onTap: onOpenSupportUs),
         _DrawerItem(icon: Icons.system_update_alt_rounded, title: 'تحقق من التحديث', onTap: () => _showGentleMessage(context, 'سيتحقق التطبيق من الإصدار عند ربط صفحة الإصدارات.')),
         const Divider(height: 28),
-        _DrawerItem(icon: Icons.headphones_outlined, title: 'تطبيق التلاوات — قريباً', onTap: () => _showGentleMessage(context, 'سيظهر رابط تطبيق التلاوات المستقل هنا عند إطلاقه.')),
+        _DrawerItem(icon: Icons.info_outline_rounded, title: 'حول المصحف والمصادر', onTap: () => _showGentleMessage(context, 'بيانات المصحف محلية. المصدر: quran-json، النص العثماني من موسوعة القرآن الكريم، CC BY-SA 4.0.')),
         _DrawerItem(icon: Icons.privacy_tip_outlined, title: 'الخصوصية', onTap: () => _showGentleMessage(context, 'لا يحتاج مَعين إلى حساب، وموقعك اختياري ويستخدم محلياً للمواقيت.')),
       ])),
     );
