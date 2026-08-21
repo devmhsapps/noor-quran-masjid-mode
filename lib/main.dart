@@ -662,7 +662,7 @@ class _HomeTab extends StatelessWidget {
           foreground: theme.colorScheme.onPrimary,
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              const _ChipLabel(label: 'صلاتي اليوم'),
+              _ChipLabel(label: 'صلاتي اليوم'),
               Icon(Icons.explore_rounded, color: theme.colorScheme.onPrimary),
             ]),
             const SizedBox(height: 18),
@@ -762,7 +762,7 @@ class _PrayerTab extends StatelessWidget {
     final theme = Theme.of(context);
     return ListView(padding: const EdgeInsets.fromLTRB(20, 8, 20, 24), children: [
       _MueenCard(color: theme.colorScheme.primary, foreground: theme.colorScheme.onPrimary, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const _ChipLabel(label: 'التقويم'),
+        _ChipLabel(label: 'التقويم'),
         const SizedBox(height: 14),
         Text('${hijri.hDay} ${months[(hijri.hMonth - 1).clamp(0, 11)]} ${hijri.hYear} هـ', style: const TextStyle(fontSize: 25, fontWeight: FontWeight.w900)),
         const SizedBox(height: 5),
@@ -970,7 +970,29 @@ class _SupportScreenState extends State<SupportScreen> {
         const SizedBox(height: 10),
         DropdownButtonFormField<String>(value: _topic, items: const [DropdownMenuItem(value: 'مشكلة في التطبيق', child: Text('مشكلة في التطبيق')), DropdownMenuItem(value: 'اقتراح ميزة', child: Text('اقتراح ميزة')), DropdownMenuItem(value: 'مشكلة في المواقيت', child: Text('مشكلة في المواقيت'))], onChanged: (value) => setState(() => _topic = value ?? _topic), decoration: const InputDecoration(labelText: 'نوع الطلب')),
       ]))),
-      Expanded(child: _messages.isEmpty ? const Center(child: Text('اكتب أول رسالة لفتح طلب دعم جديد.')) : ListView.builder(padding: const EdgeInsets.symmetric(horizontal: 20), itemCount: _messages.length, itemBuilder: (_, index) => Align(alignment: Alignment.centerRight, child: Container(margin: const EdgeInsets.only(bottom: 8), padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary, borderRadius: BorderRadius.circular(16)), child: Text(_messages[index], style: TextStyle(color: Theme.of(context).colorScheme.onPrimary))))),
+      Expanded(
+        child: _messages.isEmpty
+            ? const Center(child: Text('اكتب أول رسالة لفتح طلب دعم جديد.'))
+            : ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                itemCount: _messages.length,
+                itemBuilder: (_, index) => Align(
+                  alignment: Alignment.centerRight,
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primary,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Text(
+                      _messages[index],
+                      style: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
+                    ),
+                  ),
+                ),
+              ),
+      ),
       Padding(padding: const EdgeInsets.fromLTRB(16, 8, 16, 16), child: Row(children: [
         IconButton(onPressed: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('سيُتاح رفع صورة برابط مؤقت عند تفعيل تخزين الدعم الفني.'))), icon: const Icon(Icons.attach_file_rounded)),
         Expanded(child: TextField(controller: _message, textDirection: TextDirection.rtl, onSubmitted: (_) => _send(), decoration: const InputDecoration(hintText: 'اكتب رسالتك...'))),
