@@ -276,5 +276,19 @@ class _MetricCard extends StatelessWidget {
 class _CalendarGrid extends StatelessWidget {
   const _CalendarGrid();
   @override
-  Widget build(BuildContext context) => GridView.builder(shrinkWrap: true, physics: const NeverScrollableScrollPhysics(), itemCount: 35, gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 7, childAspectRatio: .82), itemBuilder: (context, index) { final day = index + 1; final selected = day == 22; return Container(margin: const EdgeInsets.all(2), decoration: BoxDecoration(borderRadius: BorderRadius.circular(9), border: Border.all(color: selected ? MueenColors.gold : Colors.transparent)), child: Center(child: Text('$day', style: TextStyle(fontWeight: selected ? FontWeight.w900 : FontWeight.w700, color: selected ? MueenColors.forest : MueenColors.ink))); });
+  Widget build(BuildContext context) => GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: 35,
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 7, childAspectRatio: .82),
+        itemBuilder: (context, index) {
+          final day = index + 1;
+          final selected = day == 22;
+          return Container(
+            margin: const EdgeInsets.all(2),
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(9), border: Border.all(color: selected ? MueenColors.gold : Colors.transparent)),
+            child: Center(child: Text('$day', style: TextStyle(fontWeight: selected ? FontWeight.w900 : FontWeight.w700, color: selected ? MueenColors.forest : MueenColors.ink))),
+          );
+        },
+      );
 }
