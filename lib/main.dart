@@ -644,19 +644,89 @@ class _MueenShellState extends State<MueenShell> {
         ],
       ),
       body: SafeArea(top: false, child: screens[_selectedIndex]),
-      bottomNavigationBar: NavigationBar(
+      bottomNavigationBar: _MueenBottomNav(
         selectedIndex: _selectedIndex,
-        onDestinationSelected: (value) => setState(() => _selectedIndex = value),
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home_rounded), label: 'الرئيسية'),
-          NavigationDestination(icon: Icon(Icons.explore_outlined), selectedIcon: Icon(Icons.explore_rounded), label: 'صلاتي'),
-          NavigationDestination(icon: Icon(Icons.menu_book_outlined), selectedIcon: Icon(Icons.menu_book_rounded), label: 'المصحف'),
-          NavigationDestination(icon: Icon(Icons.spa_outlined), selectedIcon: Icon(Icons.spa_rounded), label: 'الأذكار'),
-          NavigationDestination(icon: Icon(Icons.grid_view_rounded), selectedIcon: Icon(Icons.grid_view_rounded), label: 'المزيد'),
-        ],
+        onSelected: (value) => setState(() => _selectedIndex = value),
       ),
     );
   }
+}
+
+class _MueenBottomNav extends StatelessWidget {
+  const _MueenBottomNav({required this.selectedIndex, required this.onSelected});
+
+  final int selectedIndex;
+  final ValueChanged<int> onSelected;
+
+  static const _items = <_BottomNavItem>[
+    _BottomNavItem(label: 'الرئيسية', icon: Icons.home_outlined, selectedIcon: Icons.home_rounded),
+    _BottomNavItem(label: 'صلاتي', icon: Icons.timelapse_outlined, selectedIcon: Icons.timelapse_rounded),
+    _BottomNavItem(label: 'المصحف', icon: Icons.auto_stories_outlined, selectedIcon: Icons.auto_stories_rounded),
+    _BottomNavItem(label: 'الأذكار', icon: Icons.local_florist_outlined, selectedIcon: Icons.local_florist_rounded),
+    _BottomNavItem(label: 'المزيد', icon: Icons.dashboard_outlined, selectedIcon: Icons.dashboard_rounded),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return SafeArea(
+      top: false,
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface.withValues(alpha: .96),
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: .42)),
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: .08), blurRadius: 18, offset: const Offset(0, 7))],
+        ),
+        child: Row(
+          children: List.generate(_items.length, (index) {
+            final item = _items[index];
+            final selected = index == selectedIndex;
+            return Expanded(
+              child: Semantics(
+                selected: selected,
+                button: true,
+                label: item.label,
+                child: InkWell(
+                  onTap: () => onSelected(index),
+                  borderRadius: BorderRadius.circular(20),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Column(mainAxisSize: MainAxisSize.min, children: [
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        curve: Curves.easeOut,
+                        width: 43,
+                        height: 43,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: selected ? theme.colorScheme.primary : theme.colorScheme.primary.withValues(alpha: .08),
+                          boxShadow: selected ? [BoxShadow(color: theme.colorScheme.primary.withValues(alpha: .22), blurRadius: 10, offset: const Offset(0, 4))] : null,
+                        ),
+                        child: Icon(selected ? item.selectedIcon : item.icon, color: selected ? theme.colorScheme.onPrimary : theme.colorScheme.primary, size: 22),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(item.label, style: TextStyle(fontSize: 10, fontWeight: selected ? FontWeight.w900 : FontWeight.w700, color: selected ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant)),
+                    ]),
+                  ),
+                ),
+              ),
+            );
+          }),
+        ),
+      ),
+    );
+  }
+}
+
+class _BottomNavItem {
+  const _BottomNavItem({required this.label, required this.icon, required this.selectedIcon});
+
+  final String label;
+  final IconData icon;
+  final IconData selectedIcon;
 }
 
 class _HomeTab extends StatelessWidget {
