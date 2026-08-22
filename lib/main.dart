@@ -1323,6 +1323,7 @@ class _TasbihScreenState extends State<TasbihScreen> {
           ]),
         ),
       );
+}
 
 class SupportScreen extends StatefulWidget {
   const SupportScreen({super.key});
