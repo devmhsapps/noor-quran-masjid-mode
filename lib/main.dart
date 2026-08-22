@@ -1472,6 +1472,7 @@ class _DhikrReadingScreenState extends State<DhikrReadingScreen> {
           },
         ),
       );
+}
 
 class _DrawerItem extends StatelessWidget {
   const _DrawerItem({required this.icon, required this.title, required this.onTap});
