@@ -664,7 +664,7 @@ class _MueenShellState extends State<MueenShell> {
   Widget build(BuildContext context) {
     final screens = [
       _HomeTab(location: _location, onOpenMasjid: () => _openPage(const MasjidModeScreen()), onOpenPrayer: () => setState(() => _selectedIndex = 1), onOpenQuran: () => setState(() => _selectedIndex = 2)),
-      _PrayerTab(location: _location, onChooseCity: _chooseCity),
+      _PrayerTab(location: _location, onChooseCity: _chooseCity, onOpenQibla: () => _openPage(QiblaScreen(location: _location))),
       const QuranTab(),
       _DhikrTab(onOpenReminders: () => _openPage(const ReminderScreen())),
       _MoreTab(
@@ -692,7 +692,7 @@ class _MueenShellState extends State<MueenShell> {
         onOpenAdhan: () => _openPage(const AdhanSelectionScreen()),
         onOpenSounds: () => _openPage(const SoundLibraryScreen()),
         onOpenKhatma: () => _openPage(const KhatmaScreen()),
-        onOpenQibla: () => _openPage(const QiblaScreen()),
+        onOpenQibla: () => _openPage(QiblaScreen(location: _location)),
         onOpenCalendar: () => _openPage(const MueenCalendarScreen()),
       ),
     ];
@@ -950,9 +950,10 @@ class _MoreTab extends StatelessWidget {
 }
 
 class _PrayerTab extends StatefulWidget {
-  const _PrayerTab({required this.location, required this.onChooseCity});
+  const _PrayerTab({required this.location, required this.onChooseCity, required this.onOpenQibla});
   final PrayerLocation? location;
   final VoidCallback onChooseCity;
+  final VoidCallback onOpenQibla;
 
   @override
   State<_PrayerTab> createState() => _PrayerTabState();
@@ -1064,7 +1065,7 @@ class _PrayerTabState extends State<_PrayerTab> {
         }),
         const SizedBox(height: 8),
         Row(children: [
-          Expanded(child: _PrayerQuickAction(icon: Icons.explore_outlined, label: 'القبلة', onTap: () => _showGentleMessage(context, 'ستعمل البوصلة بعد ربط حساسات الهاتف وحساب اتجاه القبلة.'))),
+          Expanded(child: _PrayerQuickAction(icon: Icons.explore_outlined, label: 'القبلة', onTap: widget.onOpenQibla)),
           const SizedBox(width: 10),
           Expanded(child: _PrayerQuickAction(icon: Icons.calendar_month_outlined, label: 'التقويم', onTap: () => _showGentleMessage(context, 'سيظهر التقويم الكامل والمناسبات في التحديث التالي.'))),
           const SizedBox(width: 10),

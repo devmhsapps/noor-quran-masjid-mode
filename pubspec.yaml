@@ -11,6 +11,7 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_local_notifications: ^19.3.1
+  flutter_compass: ^0.8.0
   flutter_tts: ^4.2.3
   geolocator: ^14.0.2
   hijri: ^3.0.0

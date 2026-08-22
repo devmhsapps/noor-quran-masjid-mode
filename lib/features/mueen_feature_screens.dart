@@ -1,4 +1,8 @@
+import 'dart:async';
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+import 'package:flutter_compass/flutter_compass.dart';
 import 'package:hijri/hijri_calendar.dart';
 
 import '../prayer/place_catalog.dart';
@@ -358,11 +362,47 @@ class KhatmaScreen extends StatelessWidget {
   }
 }
 
-class QiblaScreen extends StatelessWidget {
-  const QiblaScreen({super.key});
+class QiblaScreen extends StatefulWidget {
+  const QiblaScreen({super.key, this.location});
+  final PrayerLocation? location;
+
+  @override
+  State<QiblaScreen> createState() => _QiblaScreenState();
+}
+
+class _QiblaScreenState extends State<QiblaScreen> {
+  StreamSubscription<CompassEvent>? _subscription;
+  double? _heading;
+
+  @override
+  void initState() {
+    super.initState();
+    _subscription = FlutterCompass.events?.listen((event) {
+      if (mounted) setState(() => _heading = event.heading);
+    });
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final palette = MueenPalette.of(context);
+    final location = widget.location;
+    if (location == null) {
+      return _FeatureScaffold(
+        title: 'القبلة',
+        subtitle: 'تحتاج إلى مكانك',
+        body: const Center(child: Padding(padding: EdgeInsets.all(28), child: Text('اختر موقعك يدوياً أو استخدم GPS أولاً، ثم افتح القبلة لحساب اتجاه الكعبة.'))),
+      );
+    }
+    final bearing = _qiblaBearing(location.latitude, location.longitude);
+    final distance = _distanceToMakkah(location.latitude, location.longitude);
+    final heading = _heading;
+    final angle = heading == null ? 0.0 : (bearing - heading) * math.pi / 180;
     return _FeatureScaffold(
         title: 'القبلة',
         subtitle: 'دقة المستشعر ومعايرته',
@@ -371,16 +411,36 @@ class QiblaScreen extends StatelessWidget {
             const SizedBox(height: 4),
             Container(width: 254, height: 254, decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: palette.primary, width: 4)), child: Stack(alignment: Alignment.center, children: [
               Positioned(top: 18, child: Text('ش', style: TextStyle(fontSize: 22, color: palette.goldAccent, fontWeight: FontWeight.w900))),
-              Icon(Icons.navigation_rounded, color: palette.primary, size: 96),
-              Column(mainAxisAlignment: MainAxisAlignment.center, children: [const SizedBox(height: 52), Text('212°', style: TextStyle(fontSize: 38, color: palette.primary, fontWeight: FontWeight.w900)), Text('اتجه نحو القبلة', style: TextStyle(color: palette.muted))]),
+              Transform.rotate(angle: angle, child: Icon(Icons.navigation_rounded, color: palette.primary, size: 96)),
+              Column(mainAxisAlignment: MainAxisAlignment.center, children: [const SizedBox(height: 52), Text('${bearing.round()}°', style: TextStyle(fontSize: 38, color: palette.primary, fontWeight: FontWeight.w900)), Text(heading == null ? 'بانتظار مستشعر البوصلة' : 'اتجه نحو القبلة', style: TextStyle(color: palette.muted))]),
             ])),
             const SizedBox(height: 14),
-            Text('حرّك هاتفك على شكل 8 للمعايرة', style: TextStyle(fontWeight: FontWeight.w800, color: palette.ink)),
+            Text('حرّك هاتفك على شكل 8 للمعايرة، وأبعده عن المعادن والمغناطيس.', style: TextStyle(fontWeight: FontWeight.w800, color: palette.ink), textAlign: TextAlign.center),
           ])),
           const SizedBox(height: 14),
-          Row(children: const [Expanded(child: _MetricCard(label: 'المسافة إلى مكة', value: '1,274 كم', icon: Icons.mosque_outlined)), SizedBox(width: 10), Expanded(child: _MetricCard(label: 'دقة المستشعر', value: 'جيدة', icon: Icons.gps_fixed_rounded))]),
+          Row(children: [Expanded(child: _MetricCard(label: 'المسافة إلى مكة', value: '${distance.round()} كم', icon: Icons.mosque_outlined)), const SizedBox(width: 10), Expanded(child: _MetricCard(label: 'حالة المستشعر', value: heading == null ? 'غير متاح' : 'يعمل', icon: Icons.gps_fixed_rounded))]),
         ]),
       );
+  }
+
+  double _qiblaBearing(double latitude, double longitude) {
+    const makkahLatitude = 21.4225;
+    const makkahLongitude = 39.8262;
+    final lat1 = latitude * math.pi / 180;
+    final lat2 = makkahLatitude * math.pi / 180;
+    final deltaLongitude = (makkahLongitude - longitude) * math.pi / 180;
+    final y = math.sin(deltaLongitude) * math.cos(lat2);
+    final x = math.cos(lat1) * math.sin(lat2) - math.sin(lat1) * math.cos(lat2) * math.cos(deltaLongitude);
+    return (math.atan2(y, x) * 180 / math.pi + 360) % 360;
+  }
+
+  double _distanceToMakkah(double latitude, double longitude) {
+    const makkahLatitude = 21.4225;
+    const makkahLongitude = 39.8262;
+    final latDelta = (makkahLatitude - latitude) * math.pi / 180;
+    final longitudeDelta = (makkahLongitude - longitude) * math.pi / 180;
+    final a = math.sin(latDelta / 2) * math.sin(latDelta / 2) + math.cos(latitude * math.pi / 180) * math.cos(makkahLatitude * math.pi / 180) * math.sin(longitudeDelta / 2) * math.sin(longitudeDelta / 2);
+    return 6371 * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
   }
 }
 
