@@ -30,6 +30,8 @@ jobs:
           cp tool/android/app/src/main/AndroidManifest.xml android/app/src/main/AndroidManifest.xml
           mkdir -p android/app/src/main/kotlin/com/devmhs/noor_quran_masjid_mode
           cp tool/android/app/src/main/kotlin/com/devmhs/noor_quran_masjid_mode/*.kt android/app/src/main/kotlin/com/devmhs/noor_quran_masjid_mode/
+          mkdir -p android/app/src/main/res/raw
+          cp tool/android/app/src/main/res/raw/adhan.ogg android/app/src/main/res/raw/adhan.ogg
           if [ -f android/app/build.gradle.kts ]; then
             sed -i 's/minSdk = flutter.minSdkVersion/minSdk = 23/' android/app/build.gradle.kts
             sed -i '/targetCompatibility = JavaVersion.VERSION_/a\        isCoreLibraryDesugaringEnabled = true' android/app/build.gradle.kts

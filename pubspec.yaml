@@ -1,7 +1,7 @@
 name: noor_quran_masjid_mode
 description: Mueen — Arabic Quran and prayer companion for Android.
 publish_to: "none"
-version: 1.2.3+18
+version: 1.2.4+19
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
@@ -12,9 +12,11 @@ dependencies:
     sdk: flutter
   flutter_local_notifications: ^19.3.1
   flutter_tts: ^4.2.3
+  geolocator: ^14.0.2
   hijri: ^3.0.0
   permission_handler: ^12.0.1
   shared_preferences: ^2.5.3
+  timezone: ^0.10.1
 
 dev_dependencies:
   flutter_test:
