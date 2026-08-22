@@ -1108,11 +1108,11 @@ class _DhikrTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(padding: const EdgeInsets.fromLTRB(20, 8, 20, 24), children: [
-      const _DhikrCategory(title: 'أذكار الصباح', subtitle: 'ابدأ يومك بذكر الله.', icon: Icons.wb_sunny_outlined),
+      _DhikrCategory(title: 'أذكار الصباح', subtitle: 'ابدأ يومك بذكر الله.', icon: Icons.wb_sunny_outlined, entries: LocalDhikr.morning),
       const SizedBox(height: 10),
-      const _DhikrCategory(title: 'أذكار المساء', subtitle: 'هدوء وطمأنينة في آخر اليوم.', icon: Icons.nightlight_round),
+      _DhikrCategory(title: 'أذكار المساء', subtitle: 'هدوء وطمأنينة في آخر اليوم.', icon: Icons.nightlight_round, entries: LocalDhikr.evening),
       const SizedBox(height: 10),
-      const _DhikrCategory(title: 'أذكار بعد الصلاة', subtitle: 'أذكار موثقة سهلة الوصول.', icon: Icons.mosque_outlined),
+      _DhikrCategory(title: 'أذكار بعد الصلاة', subtitle: 'ذكر وتسابيح سهلة الوصول بعد كل فريضة.', icon: Icons.mosque_outlined, entries: LocalDhikr.afterPrayer),
       const SizedBox(height: 18),
       _MueenCard(child: ListTile(
         contentPadding: EdgeInsets.zero,
@@ -1389,13 +1389,89 @@ class _FeatureRow extends StatelessWidget {
 }
 
 class _DhikrCategory extends StatelessWidget {
-  const _DhikrCategory({required this.title, required this.subtitle, required this.icon});
+  const _DhikrCategory({required this.title, required this.subtitle, required this.icon, required this.entries});
   final String title;
   final String subtitle;
   final IconData icon;
+  final List<DhikrEntry> entries;
   @override
-  Widget build(BuildContext context) => _MueenCard(child: ListTile(contentPadding: EdgeInsets.zero, leading: CircleAvatar(backgroundColor: Theme.of(context).colorScheme.primaryContainer, child: Icon(icon, color: Theme.of(context).colorScheme.primary)), title: Text(title, style: const TextStyle(fontWeight: FontWeight.w900)), subtitle: Text(subtitle), trailing: const Icon(Icons.chevron_left_rounded), onTap: () => _showGentleMessage(context, 'سيظهر نص الذكر ومصدره في هذه الصفحة.')));
+  Widget build(BuildContext context) => _MueenCard(child: ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: CircleAvatar(backgroundColor: Theme.of(context).colorScheme.primaryContainer, child: Icon(icon, color: Theme.of(context).colorScheme.primary)),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
+        subtitle: Text(subtitle),
+        trailing: const Icon(Icons.chevron_left_rounded),
+        onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => Directionality(textDirection: TextDirection.rtl, child: DhikrReadingScreen(title: title, entries: entries)))),
+      ));
 }
+
+class DhikrEntry {
+  const DhikrEntry({required this.text, required this.repetitions, required this.source});
+  final String text;
+  final int repetitions;
+  final String source;
+}
+
+class LocalDhikr {
+  static const afterPrayer = <DhikrEntry>[
+    DhikrEntry(text: 'أستغفر الله', repetitions: 3, source: 'صحيح مسلم'),
+    DhikrEntry(text: 'اللهم أنت السلام ومنك السلام تباركت يا ذا الجلال والإكرام.', repetitions: 1, source: 'صحيح مسلم'),
+    DhikrEntry(text: 'سبحان الله، والحمد لله، والله أكبر.', repetitions: 33, source: 'صحيح مسلم'),
+    DhikrEntry(text: 'لا إله إلا الله وحده لا شريك له، له الملك وله الحمد وهو على كل شيء قدير.', repetitions: 1, source: 'صحيح مسلم'),
+  ];
+
+  static const morning = <DhikrEntry>[
+    DhikrEntry(text: 'أصبحنا وأصبح الملك لله، والحمد لله، لا إله إلا الله وحده لا شريك له.', repetitions: 1, source: 'صحيح مسلم'),
+    DhikrEntry(text: 'اللهم بك أصبحنا وبك أمسينا وبك نحيا وبك نموت وإليك النشور.', repetitions: 1, source: 'سنن الترمذي'),
+    DhikrEntry(text: 'رضيت بالله رباً وبالإسلام ديناً وبمحمد ﷺ نبياً.', repetitions: 3, source: 'سنن أبي داود والترمذي'),
+  ];
+
+  static const evening = <DhikrEntry>[
+    DhikrEntry(text: 'أمسينا وأمسى الملك لله، والحمد لله، لا إله إلا الله وحده لا شريك له.', repetitions: 1, source: 'صحيح مسلم'),
+    DhikrEntry(text: 'اللهم بك أمسينا وبك أصبحنا وبك نحيا وبك نموت وإليك المصير.', repetitions: 1, source: 'سنن الترمذي'),
+    DhikrEntry(text: 'رضيت بالله رباً وبالإسلام ديناً وبمحمد ﷺ نبياً.', repetitions: 3, source: 'سنن أبي داود والترمذي'),
+  ];
+}
+
+class DhikrReadingScreen extends StatefulWidget {
+  const DhikrReadingScreen({super.key, required this.title, required this.entries});
+  final String title;
+  final List<DhikrEntry> entries;
+
+  @override
+  State<DhikrReadingScreen> createState() => _DhikrReadingScreenState();
+}
+
+class _DhikrReadingScreenState extends State<DhikrReadingScreen> {
+  late final List<int> _counts = List<int>.filled(widget.entries.length, 0);
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        appBar: AppBar(title: Text(widget.title)),
+        body: ListView.separated(
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
+          itemCount: widget.entries.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 10),
+          itemBuilder: (context, index) {
+            final entry = widget.entries[index];
+            final count = _counts[index];
+            final complete = count >= entry.repetitions;
+            return _MueenCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(entry.text, style: const TextStyle(fontSize: 19, height: 1.8, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 12),
+              Row(children: [
+                Expanded(child: Text(entry.source, style: Theme.of(context).textTheme.bodySmall)),
+                Text('${count.clamp(0, entry.repetitions)} / ${entry.repetitions}', style: TextStyle(color: complete ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.w900)),
+                const SizedBox(width: 8),
+                FilledButton(
+                  onPressed: complete ? null : () => setState(() => _counts[index]++),
+                  child: Text(complete ? 'تم' : 'تسبيح'),
+                ),
+              ]),
+            ]));
+          },
+        ),
+      );
 
 class _DrawerItem extends StatelessWidget {
   const _DrawerItem({required this.icon, required this.title, required this.onTap});
