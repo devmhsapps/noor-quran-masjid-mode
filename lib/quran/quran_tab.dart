@@ -663,13 +663,20 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
                 if (!_focusMode) ...[
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                     decoration: BoxDecoration(color: theme.colorScheme.primary.withValues(alpha: .07), borderRadius: BorderRadius.circular(18)),
-                    child: Row(children: [
-                      Container(width: 34, height: 34, decoration: BoxDecoration(shape: BoxShape.circle, color: theme.colorScheme.primary), child: Icon(Icons.auto_stories_rounded, color: theme.colorScheme.onPrimary, size: 19)),
-                      const SizedBox(width: 10),
-                      Expanded(child: Text('قراءة مريحة • اضغط مطولاً على الآية للأدوات', style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w700))),
-                      Text('${widget.surah.verses.length} آية', style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.w900)),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Row(children: [
+                        Container(width: 36, height: 36, decoration: BoxDecoration(shape: BoxShape.circle, color: theme.colorScheme.primary), child: Icon(Icons.auto_stories_rounded, color: theme.colorScheme.onPrimary, size: 19)),
+                        const SizedBox(width: 10),
+                        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text('سورة ${widget.surah.name}', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
+                          Text('${widget.surah.revelationType == 'meccan' ? 'مكية' : 'مدنية'} • ${widget.surah.verses.length} آية', style: theme.textTheme.bodySmall),
+                        ])),
+                        Icon(Icons.bookmark_outline_rounded, color: theme.colorScheme.primary),
+                      ]),
+                      const SizedBox(height: 11),
+                      Text('تظهر بيانات الآية أولاً ثم النص؛ اضغط مطولاً على الآية للحفظ أو الملاحظة.', style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w700)),
                     ]),
                   ),
                   const SizedBox(height: 18),
@@ -689,25 +696,28 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
             onLongPress: () => _showVerseActions(verse),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 180),
-              margin: const EdgeInsets.only(bottom: 5),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
               decoration: BoxDecoration(
                 color: highlighted ? theme.colorScheme.primaryContainer : (bookmarkType == null ? null : _bookmarkColor(bookmarkType).withValues(alpha: .07)),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: bookmarkType == null ? Colors.transparent : _bookmarkColor(bookmarkType).withValues(alpha: .65)),
+                border: Border(bottom: BorderSide(color: bookmarkType == null ? theme.dividerColor.withValues(alpha: .28) : _bookmarkColor(bookmarkType).withValues(alpha: .65))),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  if (!_focusMode || hasNote || favorite || bookmarkType != null)
+                  if (!_focusMode || hasNote || favorite || bookmarkType != null) ...[
                     Row(children: [
-                      Container(width: 27, height: 27, alignment: Alignment.center, decoration: BoxDecoration(shape: BoxShape.circle, color: theme.colorScheme.primary.withValues(alpha: .10)), child: Text('${verse.number}', style: TextStyle(fontSize: 11, color: theme.colorScheme.primary, fontWeight: FontWeight.w900))),
+                      Container(width: 28, height: 28, alignment: Alignment.center, decoration: BoxDecoration(shape: BoxShape.circle, color: theme.colorScheme.primary.withValues(alpha: .10)), child: Text('${verse.number}', style: TextStyle(fontSize: 11, color: theme.colorScheme.primary, fontWeight: FontWeight.w900))),
+                      const SizedBox(width: 7),
+                      Text('الآية ${verse.number}', style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.w900, fontSize: 12)),
                       const Spacer(),
                       if (hasNote) const Padding(padding: EdgeInsets.only(left: 8), child: Icon(Icons.sticky_note_2_rounded, size: 17, color: Color(0xFF2E6F95))),
                       if (favorite) const Padding(padding: EdgeInsets.only(left: 8), child: Icon(Icons.star_rounded, size: 17, color: Color(0xFFC58A28))),
                       if (bookmarkType != null) Icon(Icons.bookmark_rounded, size: 17, color: _bookmarkColor(bookmarkType)),
                     ]),
-                  const SizedBox(height: 7),
+                    const SizedBox(height: 9),
+                  ],
                   Text(
                     verse.text,
                     textDirection: TextDirection.rtl,
