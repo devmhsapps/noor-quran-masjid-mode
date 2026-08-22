@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'core/duration.dart';
 import 'core/masjid_mode_channel.dart';
 import 'prayer/prayer_calculator.dart';
+import 'prayer/night_fasting_screen.dart';
 import 'quran/quran_tab.dart';
 import 'widgets/islamic_background.dart';
 
@@ -582,6 +583,14 @@ class _MueenShellState extends State<MueenShell> {
     );
   }
 
+  Future<void> _openNightFasting() async {
+    if (_city == 'اختر المدينة') {
+      _chooseCity();
+      return;
+    }
+    _openPage(NightFastingScreen(city: _city));
+  }
+
   @override
   Widget build(BuildContext context) {
     final screens = [
@@ -589,7 +598,11 @@ class _MueenShellState extends State<MueenShell> {
       _PrayerTab(city: _city, onChooseCity: _chooseCity),
       const QuranTab(),
       _DhikrTab(onOpenReminders: () => _openPage(const ReminderScreen())),
-      _MoreTab(onOpenSupport: () => _openPage(const SupportScreen()), onOpenSupportUs: () => _openPage(const SupportUsScreen())),
+      _MoreTab(
+        onOpenNightFasting: _openNightFasting,
+        onOpenSupport: () => _openPage(const SupportScreen()),
+        onOpenSupportUs: () => _openPage(const SupportUsScreen()),
+      ),
     ];
     const titles = ['الرئيسية', 'صلاتي', 'المصحف', 'الأذكار', 'المزيد'];
 
@@ -705,8 +718,9 @@ class _HomeTab extends StatelessWidget {
 }
 
 class _MoreTab extends StatelessWidget {
-  const _MoreTab({required this.onOpenSupport, required this.onOpenSupportUs});
+  const _MoreTab({required this.onOpenNightFasting, required this.onOpenSupport, required this.onOpenSupportUs});
 
+  final VoidCallback onOpenNightFasting;
   final VoidCallback onOpenSupport;
   final VoidCallback onOpenSupportUs;
 
@@ -723,6 +737,7 @@ class _MoreTab extends StatelessWidget {
       ])),
       const SizedBox(height: 16),
       const _FeatureRow(icon: Icons.flag_outlined, title: 'وردي وختماتي', detail: 'تابع القراءة والحفظ والمراجعة محلياً.'),
+      _FeatureRow(icon: Icons.nights_stay_outlined, title: 'ليلتي وصيامي', detail: 'السحور والإفطار وأوقات الليل بحساب محلي.', onTap: onOpenNightFasting),
       const _FeatureRow(icon: Icons.calendar_month_outlined, title: 'التقويم الهجري', detail: 'التاريخ والمناسبات الهجرية والميلادية.'),
       const _FeatureRow(icon: Icons.explore_outlined, title: 'القبلة', detail: 'اتجاه الكعبة مع معايرة المستشعر.'),
       _FeatureRow(icon: Icons.support_agent_rounded, title: 'الدعم الفني', detail: 'أرسل طلبك وتابع الرد عند ربط الخدمة.', onTap: onOpenSupport),

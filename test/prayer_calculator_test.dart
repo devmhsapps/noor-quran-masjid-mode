@@ -14,4 +14,15 @@ void main() {
   test('لا يفبرك مواقيت لمدينة غير مدعومة', () {
     expect(PrayerCalculator.forCity('مدينة غير معروفة'), isNull);
   });
+
+  test('يحسِب أوقات الصيام والليل من الفجر والمغرب محلياً', () {
+    final info = PrayerCalculator.nightFastingForCity('بغداد', now: DateTime(2026, 8, 22, 10));
+
+    expect(info, isNotNull);
+    expect(info!.fastingDuration.isPositive, isTrue);
+    expect(info.nightDuration.isPositive, isTrue);
+    expect(info.middleOfNight.isAfter(info.maghrib), isTrue);
+    expect(info.lastThirdStarts.isAfter(info.middleOfNight), isTrue);
+    expect(info.nextFajr.isAfter(info.maghrib), isTrue);
+  });
 }

@@ -30,6 +30,30 @@ class PrayerSchedule {
   final PrayerMoment next;
 }
 
+class NightFastingInfo {
+  const NightFastingInfo({
+    required this.city,
+    required this.fajr,
+    required this.maghrib,
+    required this.nextFajr,
+    required this.fastingDuration,
+    required this.afterIftarDuration,
+    required this.nightDuration,
+    required this.middleOfNight,
+    required this.lastThirdStarts,
+  });
+
+  final PrayerCity city;
+  final DateTime fajr;
+  final DateTime maghrib;
+  final DateTime nextFajr;
+  final Duration fastingDuration;
+  final Duration afterIftarDuration;
+  final Duration nightDuration;
+  final DateTime middleOfNight;
+  final DateTime lastThirdStarts;
+}
+
 class PrayerCalculator {
   static const cities = <PrayerCity>[
     PrayerCity(name: 'بغداد', latitude: 33.3152, longitude: 44.3661, utcOffset: Duration(hours: 3)),
@@ -48,6 +72,26 @@ class PrayerCalculator {
     final entries = _entriesFor(today);
     final next = entries.where((entry) => entry.time.isAfter(current)).cast<PrayerMoment?>().firstOrNull ?? _entriesFor(tomorrow).first;
     return PrayerSchedule(city: city, entries: entries, next: next);
+  }
+
+  static NightFastingInfo? nightFastingForCity(String cityName, {DateTime? now}) {
+    final city = cities.where((item) => item.name == cityName).cast<PrayerCity?>().firstOrNull;
+    if (city == null) return null;
+    final current = now ?? DateTime.now();
+    final today = _timesFor(city, current);
+    final tomorrow = _timesFor(city, current.add(const Duration(days: 1)));
+    final nightDuration = tomorrow.fajr.difference(today.maghrib);
+    return NightFastingInfo(
+      city: city,
+      fajr: today.fajr,
+      maghrib: today.maghrib,
+      nextFajr: tomorrow.fajr,
+      fastingDuration: today.maghrib.difference(today.fajr),
+      afterIftarDuration: tomorrow.fajr.difference(today.maghrib),
+      nightDuration: nightDuration,
+      middleOfNight: today.maghrib.add(Duration(minutes: nightDuration.inMinutes ~/ 2)),
+      lastThirdStarts: today.maghrib.add(Duration(minutes: (nightDuration.inMinutes * 2) ~/ 3)),
+    );
   }
 
   static PrayerTimes _timesFor(PrayerCity city, DateTime date) {
@@ -83,6 +127,13 @@ class PrayerCalculator {
     final minutes = difference.inMinutes.remainder(60);
     if (hours == 0) return 'بعد $minutes دقيقة';
     return 'بعد $hours ساعة و$minutes د';
+  }
+
+  static String formatDuration(Duration duration) {
+    final minutes = duration.inMinutes.abs();
+    final hours = minutes ~/ 60;
+    final remainder = minutes % 60;
+    return '$hours س $remainder د';
   }
 }
 
