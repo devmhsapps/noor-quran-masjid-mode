@@ -643,6 +643,11 @@ class _MueenShellState extends State<MueenShell> {
           onSave: _saveCity,
           onAutoLocate: () async => (await PrayerLocationService().detectNearestCity()).name,
         )),
+        onOpenPrayerReminders: () => _openPage(PrayerRemindersScreen(
+          onSaved: () async {
+            if (_city != 'اختر المدينة') await PrayerNotificationService.instance.scheduleNext24Hours(_city);
+          },
+        )),
         onOpenAdhan: () => _openPage(const AdhanSelectionScreen()),
         onOpenSounds: () => _openPage(const SoundLibraryScreen()),
         onOpenKhatma: () => _openPage(const KhatmaScreen()),
@@ -864,12 +869,13 @@ class _PrayerHeroCard extends StatelessWidget {
 }
 
 class _MoreTab extends StatelessWidget {
-  const _MoreTab({required this.onOpenNightFasting, required this.onOpenSupport, required this.onOpenSupportUs, required this.onOpenLocation, required this.onOpenAdhan, required this.onOpenSounds, required this.onOpenKhatma, required this.onOpenQibla, required this.onOpenCalendar});
+  const _MoreTab({required this.onOpenNightFasting, required this.onOpenSupport, required this.onOpenSupportUs, required this.onOpenLocation, required this.onOpenPrayerReminders, required this.onOpenAdhan, required this.onOpenSounds, required this.onOpenKhatma, required this.onOpenQibla, required this.onOpenCalendar});
 
   final VoidCallback onOpenNightFasting;
   final VoidCallback onOpenSupport;
   final VoidCallback onOpenSupportUs;
   final VoidCallback onOpenLocation;
+  final VoidCallback onOpenPrayerReminders;
   final VoidCallback onOpenAdhan;
   final VoidCallback onOpenSounds;
   final VoidCallback onOpenKhatma;
@@ -893,6 +899,7 @@ class _MoreTab extends StatelessWidget {
       _FeatureRow(icon: Icons.calendar_month_outlined, title: 'التقويم الهجري', detail: 'التاريخ والمناسبات الهجرية والميلادية.', onTap: onOpenCalendar),
       _FeatureRow(icon: Icons.explore_outlined, title: 'القبلة', detail: 'اتجاه الكعبة مع معايرة المستشعر.', onTap: onOpenQibla),
       _FeatureRow(icon: Icons.location_on_outlined, title: 'المدينة والموقع', detail: 'اختيار يدوي أو GPS اختياري.', onTap: onOpenLocation),
+      _FeatureRow(icon: Icons.notifications_active_outlined, title: 'تذكيرات الصلاة', detail: 'تنبيه قبل الأذان والإقامة محلياً.', onTap: onOpenPrayerReminders),
       _FeatureRow(icon: Icons.volume_up_outlined, title: 'اختيار الأذان', detail: 'صوت مستقل لكل صلاة.', onTap: onOpenAdhan),
       _FeatureRow(icon: Icons.library_music_outlined, title: 'مكتبة الأصوات', detail: 'تنزيل صريح وحفظ محلي.', onTap: onOpenSounds),
       _FeatureRow(icon: Icons.support_agent_rounded, title: 'الدعم الفني', detail: 'أرسل طلبك وتابع الرد عند ربط الخدمة.', onTap: onOpenSupport),

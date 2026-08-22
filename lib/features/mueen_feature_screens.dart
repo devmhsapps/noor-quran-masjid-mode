@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hijri/hijri_calendar.dart';
 
+import '../prayer/prayer_notification_service.dart';
 import '../ui/mueen_design.dart';
 
 class MueenLocationScreen extends StatefulWidget {
@@ -69,6 +70,141 @@ class _MueenLocationScreenState extends State<MueenLocationScreen> {
             content: Wrap(spacing: 8, runSpacing: 8, children: _cities.map((city) => ChoiceChip(label: Text(city), selected: city == _city, onSelected: (_) { setState(() => _city = city); Navigator.pop(dialogContext); })).toList()),
             actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('إلغاء'))],
           ),
+        ),
+      );
+}
+
+class PrayerRemindersScreen extends StatefulWidget {
+  const PrayerRemindersScreen({super.key, this.onSaved});
+
+  final Future<void> Function()? onSaved;
+
+  @override
+  State<PrayerRemindersScreen> createState() => _PrayerRemindersScreenState();
+}
+
+class _PrayerRemindersScreenState extends State<PrayerRemindersScreen> {
+  static const _prayers = <({String id, String label})>[
+    (id: 'fajr', label: 'الفجر'),
+    (id: 'dhuhr', label: 'الظهر'),
+    (id: 'asr', label: 'العصر'),
+    (id: 'maghrib', label: 'المغرب'),
+    (id: 'isha', label: 'العشاء'),
+  ];
+
+  PrayerReminderSettings _settings = const PrayerReminderSettings();
+  bool _loading = true;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _restore();
+  }
+
+  Future<void> _restore() async {
+    final settings = await PrayerReminderSettingsStore.load();
+    if (mounted) setState(() { _settings = settings; _loading = false; });
+  }
+
+  Future<void> _save() async {
+    setState(() => _saving = true);
+    await PrayerReminderSettingsStore.save(_settings);
+    await widget.onSaved?.call();
+    if (!mounted) return;
+    setState(() => _saving = false);
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم حفظ التذكيرات وإعادة جدولة التنبيهات المحلية.')));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = MueenPalette.of(context);
+    return _FeatureScaffold(
+      title: 'تذكيرات الصلاة',
+      subtitle: 'قبل الأذان والإقامة',
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : ListView(padding: const EdgeInsets.fromLTRB(20, 14, 20, 28), children: [
+              const _HeroPanel(
+                eyebrow: 'محلي دون إنترنت',
+                title: 'استعد للصلاة بهدوء',
+                body: 'يُعاد ضبط التذكيرات من مواقيت جهازك المحفوظة عند تغيير المكان أو التحديث.',
+                icon: Icons.notifications_active_rounded,
+              ),
+              const MueenSectionLabel(title: 'قبل الأذان'),
+              MueenSurface(child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('تذكير موحّد لكل الصلوات', style: TextStyle(color: palette.ink, fontWeight: FontWeight.w900)),
+                  const SizedBox(height: 5),
+                  Text('يمكنك إيقافه أو اختيار عدد الدقائق قبل الأذان.', style: TextStyle(color: palette.muted, fontSize: 12)),
+                  const SizedBox(height: 12),
+                  _MinutesSelector(
+                    value: _settings.beforeAdhanMinutes,
+                    onChanged: (value) => setState(() => _settings = _settings.copyWith(beforeAdhanMinutes: value)),
+                  ),
+                ]),
+              )),
+              const MueenSectionLabel(title: 'تنبيه الإقامة'),
+              MueenSurface(padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 4), child: Column(children: [
+                for (var index = 0; index < _prayers.length; index++) ...[
+                  _PrayerIqamaRow(
+                    prayer: _prayers[index].label,
+                    minutes: _settings.iqamaMinutesFor(_prayers[index].id),
+                    onChanged: (value) => setState(() {
+                      final updated = Map<String, int>.from(_settings.iqamaByPrayer)..[_prayers[index].id] = value;
+                      _settings = _settings.copyWith(iqamaByPrayer: updated);
+                    }),
+                  ),
+                  if (index != _prayers.length - 1) Divider(color: palette.line),
+                ],
+              ])),
+              const SizedBox(height: 18),
+              FilledButton.icon(
+                onPressed: _saving ? null : _save,
+                icon: _saving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.save_outlined),
+                label: Text(_saving ? 'جارِ الحفظ…' : 'حفظ التذكيرات'),
+                style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(54), backgroundColor: palette.primaryStrong, foregroundColor: palette.actionForeground, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(17))),
+              ),
+            ]),
+    );
+  }
+}
+
+class _MinutesSelector extends StatelessWidget {
+  const _MinutesSelector({required this.value, required this.onChanged});
+  final int value;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) => Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [0, 5, 10, 15, 20, 30].map((minutes) => ChoiceChip(
+          label: Text(minutes == 0 ? 'إيقاف' : '$minutes د'),
+          selected: value == minutes,
+          onSelected: (_) => onChanged(minutes),
+        )).toList(),
+      );
+}
+
+class _PrayerIqamaRow extends StatelessWidget {
+  const _PrayerIqamaRow({required this.prayer, required this.minutes, required this.onChanged});
+  final String prayer;
+  final int minutes;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) => ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: const Icon(Icons.mosque_outlined),
+        title: Text('إقامة $prayer', style: const TextStyle(fontWeight: FontWeight.w900)),
+        subtitle: Text(minutes == 0 ? 'غير مفعّلة' : 'بعد $minutes دقائق من الأذان'),
+        trailing: DropdownButton<int>(
+          value: minutes,
+          underline: const SizedBox.shrink(),
+          items: [0, 5, 10, 15, 20, 30].map((value) => DropdownMenuItem(value: value, child: Text(value == 0 ? 'إيقاف' : '$value د'))).toList(),
+          onChanged: (value) { if (value != null) onChanged(value); },
         ),
       );
 }
