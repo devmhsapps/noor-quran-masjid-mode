@@ -47,11 +47,12 @@ class _QuranTabState extends State<QuranTab> {
   }
 
   Future<void> _openReader(QuranSurah surah, {int? verse}) async {
+    final allSurahs = await _surahs;
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => Directionality(
           textDirection: TextDirection.rtl,
-          child: QuranReaderScreen(surah: surah, initialVerse: verse),
+          child: QuranReaderScreen(surah: surah, allSurahs: allSurahs, initialVerse: verse),
         ),
       ),
     );
@@ -484,9 +485,10 @@ class _SavedVerseItem {
 }
 
 class QuranReaderScreen extends StatefulWidget {
-  const QuranReaderScreen({super.key, required this.surah, this.initialVerse});
+  const QuranReaderScreen({super.key, required this.surah, required this.allSurahs, this.initialVerse});
 
   final QuranSurah surah;
+  final List<QuranSurah> allSurahs;
   final int? initialVerse;
 
   @override
@@ -495,6 +497,7 @@ class QuranReaderScreen extends StatefulWidget {
 
 class _QuranReaderScreenState extends State<QuranReaderScreen> {
   double _fontSize = 25;
+  bool _focusMode = false;
   QuranReadingData _readingData = const QuranReadingData(
     bookmarkColors: <String, String>{},
     favorites: <String>{},
@@ -609,36 +612,68 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     await _loadReaderState();
   }
 
+  void _openSurahFromIndex(QuranSurah selected) {
+    Navigator.of(context).pop();
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => Directionality(
+          textDirection: TextDirection.rtl,
+          child: QuranReaderScreen(surah: selected, allSurahs: widget.allSurahs),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
+      endDrawer: _QuranSurahDrawer(
+        surahs: widget.allSurahs,
+        currentSurah: widget.surah.number,
+        onOpen: _openSurahFromIndex,
+      ),
       appBar: AppBar(
-        title: Column(children: [Text(widget.surah.name), Text('${widget.surah.verses.length} آية', style: const TextStyle(fontSize: 11))]),
+        toolbarHeight: _focusMode ? 0 : null,
+        title: _focusMode ? null : Column(children: [Text('سورة ${widget.surah.name}'), Text('${widget.surah.number} • ${widget.surah.verses.length} آية', style: const TextStyle(fontSize: 11))]),
         actions: [
-          IconButton(
-            tooltip: 'تصغير الخط',
-            onPressed: () => setState(() => _fontSize = (_fontSize - 2).clamp(19, 34)),
-            icon: const Icon(Icons.text_decrease_rounded),
-          ),
-          IconButton(
-            tooltip: 'تكبير الخط',
-            onPressed: () => setState(() => _fontSize = (_fontSize + 2).clamp(19, 34)),
-            icon: const Icon(Icons.text_increase_rounded),
-          ),
+          if (!_focusMode)
+            Builder(
+              builder: (buttonContext) => IconButton(
+                tooltip: 'فهرس السور',
+                onPressed: () => Scaffold.of(buttonContext).openEndDrawer(),
+                icon: const Icon(Icons.menu_book_rounded),
+              ),
+            ),
+          if (!_focusMode)
+            IconButton(
+              tooltip: 'وضع التركيز',
+              onPressed: () => setState(() => _focusMode = true),
+              icon: const Icon(Icons.fullscreen_rounded),
+            ),
         ],
       ),
       body: ListView.builder(
-        padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
+        padding: EdgeInsets.fromLTRB(20, _focusMode ? 24 : 14, 20, 100),
         itemCount: widget.surah.verses.length + 1,
         itemBuilder: (_, index) {
           if (index == 0) {
             return Column(
               children: [
-                Text('سورة ${widget.surah.name}', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
-                const SizedBox(height: 6),
-                const Text('اضغط مطولاً على الآية لحفظ علامة أو مفضلة أو ملاحظة.'),
-                const Divider(height: 30),
+                if (!_focusMode) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(color: theme.colorScheme.primary.withValues(alpha: .07), borderRadius: BorderRadius.circular(18)),
+                    child: Row(children: [
+                      Container(width: 34, height: 34, decoration: BoxDecoration(shape: BoxShape.circle, color: theme.colorScheme.primary), child: Icon(Icons.auto_stories_rounded, color: theme.colorScheme.onPrimary, size: 19)),
+                      const SizedBox(width: 10),
+                      Expanded(child: Text('قراءة مريحة • اضغط مطولاً على الآية للأدوات', style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w700))),
+                      Text('${widget.surah.verses.length} آية', style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.w900)),
+                    ]),
+                  ),
+                  const SizedBox(height: 18),
+                ],
               ],
             );
           }
@@ -649,34 +684,35 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
           final hasNote = _readingData.notes.containsKey(key);
           final highlighted = widget.initialVerse == verse.number;
           return InkWell(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(14),
             onTap: () => _rememberVerse(verse),
             onLongPress: () => _showVerseActions(verse),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 180),
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.all(14),
+              margin: const EdgeInsets.only(bottom: 5),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
-                color: highlighted ? theme.colorScheme.primaryContainer : null,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: bookmarkType == null ? theme.dividerColor.withValues(alpha: .45) : _bookmarkColor(bookmarkType)),
+                color: highlighted ? theme.colorScheme.primaryContainer : (bookmarkType == null ? null : _bookmarkColor(bookmarkType).withValues(alpha: .07)),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: bookmarkType == null ? Colors.transparent : _bookmarkColor(bookmarkType).withValues(alpha: .65)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Row(children: [
-                    CircleAvatar(radius: 13, child: Text('${verse.number}', style: const TextStyle(fontSize: 11))),
-                    const Spacer(),
-                    if (hasNote) const Padding(padding: EdgeInsets.only(left: 8), child: Icon(Icons.sticky_note_2_rounded, size: 18, color: Color(0xFF2E6F95))),
-                    if (favorite) const Padding(padding: EdgeInsets.only(left: 8), child: Icon(Icons.star_rounded, size: 18, color: Color(0xFFC58A28))),
-                    if (bookmarkType != null) Icon(Icons.bookmark_rounded, size: 18, color: _bookmarkColor(bookmarkType)),
-                  ]),
-                  const SizedBox(height: 9),
+                  if (!_focusMode || hasNote || favorite || bookmarkType != null)
+                    Row(children: [
+                      Container(width: 27, height: 27, alignment: Alignment.center, decoration: BoxDecoration(shape: BoxShape.circle, color: theme.colorScheme.primary.withValues(alpha: .10)), child: Text('${verse.number}', style: TextStyle(fontSize: 11, color: theme.colorScheme.primary, fontWeight: FontWeight.w900))),
+                      const Spacer(),
+                      if (hasNote) const Padding(padding: EdgeInsets.only(left: 8), child: Icon(Icons.sticky_note_2_rounded, size: 17, color: Color(0xFF2E6F95))),
+                      if (favorite) const Padding(padding: EdgeInsets.only(left: 8), child: Icon(Icons.star_rounded, size: 17, color: Color(0xFFC58A28))),
+                      if (bookmarkType != null) Icon(Icons.bookmark_rounded, size: 17, color: _bookmarkColor(bookmarkType)),
+                    ]),
+                  const SizedBox(height: 7),
                   Text(
                     verse.text,
                     textDirection: TextDirection.rtl,
                     textAlign: TextAlign.right,
-                    style: TextStyle(fontFamily: 'AmiriQuran', fontSize: _fontSize, height: 2.05),
+                    style: TextStyle(fontFamily: 'AmiriQuran', fontSize: _fontSize, height: 2.1),
                   ),
                 ],
               ),
@@ -687,8 +723,120 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 6, 20, 12),
-          child: Text('نص المصحف محلي • المصدر والرخصة في صفحة الخصوصية', textAlign: TextAlign.center, style: theme.textTheme.labelSmall),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 6),
+            decoration: BoxDecoration(color: theme.colorScheme.surface, borderRadius: BorderRadius.circular(24), border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: .45))),
+            child: Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
+              _ReaderTool(icon: Icons.text_decrease_rounded, label: 'تصغير', onTap: () => setState(() => _fontSize = (_fontSize - 2).clamp(20, 38))),
+              _ReaderTool(icon: Icons.text_increase_rounded, label: 'تكبير', onTap: () => setState(() => _fontSize = (_fontSize + 2).clamp(20, 38))),
+              _ReaderTool(icon: Icons.menu_book_rounded, label: 'الفهرس', onTap: () => Scaffold.of(context).openEndDrawer()),
+              _ReaderTool(icon: _focusMode ? Icons.fullscreen_exit_rounded : Icons.fullscreen_rounded, label: _focusMode ? 'إظهار' : 'تركيز', onTap: () => setState(() => _focusMode = !_focusMode)),
+            ]),
+          ),
         ),
+      ),
+    );
+  }
+}
+
+class _ReaderTool extends StatelessWidget {
+  const _ReaderTool({required this.icon, required this.label, required this.onTap});
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Container(width: 34, height: 34, decoration: BoxDecoration(shape: BoxShape.circle, color: Theme.of(context).colorScheme.primary.withValues(alpha: .10)), child: Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary)),
+            const SizedBox(height: 3),
+            Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800)),
+          ]),
+        ),
+      );
+}
+
+class _QuranSurahDrawer extends StatefulWidget {
+  const _QuranSurahDrawer({required this.surahs, required this.currentSurah, required this.onOpen});
+
+  final List<QuranSurah> surahs;
+  final int currentSurah;
+  final ValueChanged<QuranSurah> onOpen;
+
+  @override
+  State<_QuranSurahDrawer> createState() => _QuranSurahDrawerState();
+}
+
+class _QuranSurahDrawerState extends State<_QuranSurahDrawer> {
+  String _query = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final filtered = widget.surahs.where((surah) => surah.name.contains(_query.trim()) || '${surah.number}'.contains(_query.trim())).toList(growable: false);
+    return Drawer(
+      child: SafeArea(
+        child: Column(children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
+            color: theme.colorScheme.primary,
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [Icon(Icons.menu_book_rounded, color: theme.colorScheme.onPrimary), const SizedBox(width: 8), Text('فهرس المصحف', style: TextStyle(color: theme.colorScheme.onPrimary, fontSize: 21, fontWeight: FontWeight.w900))]),
+              const SizedBox(height: 5),
+              Text('السور • بحث وانتقال مباشر', style: TextStyle(color: theme.colorScheme.onPrimary.withValues(alpha: .78), fontSize: 12)),
+            ]),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(14),
+            child: TextField(
+              onChanged: (value) => setState(() => _query = value),
+              decoration: InputDecoration(
+                hintText: 'ابحث عن سورة أو رقمها',
+                prefixIcon: const Icon(Icons.search_rounded),
+                filled: true,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(children: [
+              Text('${filtered.length} سورة', style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.w900)),
+              const Spacer(),
+              const Text('الأجزاء ستضاف بمواضع دقيقة', style: TextStyle(fontSize: 11)),
+            ]),
+          ),
+          const SizedBox(height: 8),
+          Expanded(
+            child: ListView.separated(
+              padding: const EdgeInsets.fromLTRB(14, 4, 14, 20),
+              itemCount: filtered.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 5),
+              itemBuilder: (_, index) {
+                final surah = filtered[index];
+                final active = surah.number == widget.currentSurah;
+                return Material(
+                  color: active ? theme.colorScheme.primary.withValues(alpha: .10) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(16),
+                  child: ListTile(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    onTap: () => widget.onOpen(surah),
+                    leading: CircleAvatar(backgroundColor: active ? theme.colorScheme.primary : theme.colorScheme.primary.withValues(alpha: .10), child: Text('${surah.number}', style: TextStyle(fontSize: 12, color: active ? theme.colorScheme.onPrimary : theme.colorScheme.primary, fontWeight: FontWeight.w900))),
+                    title: Text(surah.name, style: TextStyle(fontWeight: active ? FontWeight.w900 : FontWeight.w800)),
+                    subtitle: Text('${surah.verses.length} آية • ${surah.revelationType == 'meccan' ? 'مكية' : 'مدنية'}'),
+                    trailing: active ? Icon(Icons.check_circle_rounded, color: theme.colorScheme.primary) : const Icon(Icons.chevron_left_rounded),
+                  ),
+                );
+              },
+            ),
+          ),
+        ]),
       ),
     );
   }
