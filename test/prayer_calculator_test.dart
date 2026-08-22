@@ -19,8 +19,8 @@ void main() {
     final info = PrayerCalculator.nightFastingForCity('بغداد', now: DateTime(2026, 8, 22, 10));
 
     expect(info, isNotNull);
-    expect(info!.fastingDuration.isPositive, isTrue);
-    expect(info.nightDuration.isPositive, isTrue);
+    expect(info!.fastingDuration.inMinutes, greaterThan(0));
+    expect(info.nightDuration.inMinutes, greaterThan(0));
     expect(info.middleOfNight.isAfter(info.maghrib), isTrue);
     expect(info.lastThirdStarts.isAfter(info.middleOfNight), isTrue);
     expect(info.nextFajr.isAfter(info.maghrib), isTrue);
