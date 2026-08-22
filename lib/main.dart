@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/duration.dart';
 import 'core/masjid_mode_channel.dart';
+import 'prayer/prayer_calculator.dart';
 import 'quran/quran_tab.dart';
 import 'widgets/islamic_background.dart';
 
@@ -730,10 +731,31 @@ class _MoreTab extends StatelessWidget {
   }
 }
 
-class _PrayerTab extends StatelessWidget {
+class _PrayerTab extends StatefulWidget {
   const _PrayerTab({required this.city, required this.onChooseCity});
   final String city;
   final VoidCallback onChooseCity;
+
+  @override
+  State<_PrayerTab> createState() => _PrayerTabState();
+}
+
+class _PrayerTabState extends State<_PrayerTab> {
+  Timer? _ticker;
+
+  @override
+  void initState() {
+    super.initState();
+    _ticker = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -741,47 +763,98 @@ class _PrayerTab extends StatelessWidget {
     final months = ['محرم', 'صفر', 'ربيع الأول', 'ربيع الآخر', 'جمادى الأولى', 'جمادى الآخرة', 'رجب', 'شعبان', 'رمضان', 'شوال', 'ذو القعدة', 'ذو الحجة'];
     final now = DateTime.now();
     final theme = Theme.of(context);
+    final schedule = PrayerCalculator.forCity(widget.city, now: now);
     return ListView(padding: const EdgeInsets.fromLTRB(20, 8, 20, 24), children: [
       _MueenCard(color: theme.colorScheme.primary, foreground: theme.colorScheme.onPrimary, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        _ChipLabel(label: 'التقويم'),
-        const SizedBox(height: 14),
-        Text('${hijri.hDay} ${months[(hijri.hMonth - 1).clamp(0, 11)]} ${hijri.hYear} هـ', style: const TextStyle(fontSize: 25, fontWeight: FontWeight.w900)),
-        const SizedBox(height: 5),
+        Row(children: [
+          const Icon(Icons.location_on_outlined, size: 18),
+          const SizedBox(width: 6),
+          Expanded(child: Text(widget.city, style: const TextStyle(fontWeight: FontWeight.w900))),
+          TextButton(onPressed: widget.onChooseCity, style: TextButton.styleFrom(foregroundColor: theme.colorScheme.onPrimary), child: const Text('تغيير')),
+        ]),
+        const SizedBox(height: 12),
+        Text('${hijri.hDay} ${months[(hijri.hMonth - 1).clamp(0, 11)]} ${hijri.hYear} هـ', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
+        const SizedBox(height: 4),
         Text('${now.day}/${now.month}/${now.year} م'),
-        const SizedBox(height: 14),
-        const Text('يعرض التقويم المناسبات والأشهر الهجرية عند تفعيل بيانات التقويم.'),
+        const SizedBox(height: 10),
+        const Text('المواقيت تحسب محلياً حسب المدينة وطريقة الحساب المختارة.'),
       ])),
       const SizedBox(height: 14),
-      _MueenCard(child: ListTile(
-        contentPadding: EdgeInsets.zero,
-        leading: Icon(Icons.location_on_outlined, color: theme.colorScheme.primary),
-        title: Text(city, style: const TextStyle(fontWeight: FontWeight.w800)),
-        subtitle: const Text('المدينة تستخدم لحساب المواقيت والقبلة.'),
-        trailing: TextButton(onPressed: onChooseCity, child: const Text('تغيير')),
-      )),
-      const SizedBox(height: 16),
-      Text('مواقيت اليوم', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
-      const SizedBox(height: 10),
-      if (city == 'اختر المدينة') _MueenCard(child: Column(children: [
-        const Icon(Icons.location_searching_rounded, size: 34),
+      if (schedule == null)
+        _MueenCard(child: Column(children: [
+          const Icon(Icons.location_searching_rounded, size: 38),
+          const SizedBox(height: 10),
+          const Text('اختر مدينة لعرض مواقيت حقيقية', style: TextStyle(fontWeight: FontWeight.w900)),
+          const SizedBox(height: 6),
+          const Text('يبقى اختيار المدينة محلياً، ولا يُطلب الموقع إلا عندما تختاره أنت.', textAlign: TextAlign.center),
+          const SizedBox(height: 14),
+          FilledButton.icon(onPressed: widget.onChooseCity, icon: const Icon(Icons.location_on_outlined), label: const Text('اختيار المدينة')),
+        ]))
+      else ...[
+        _MueenCard(color: theme.colorScheme.primaryContainer, child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          const Text('الصلاة التالية', style: TextStyle(fontWeight: FontWeight.w800)),
+          const SizedBox(height: 8),
+          Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+            Expanded(child: Text(schedule.next.label, style: const TextStyle(fontSize: 29, fontWeight: FontWeight.w900))),
+            Text(PrayerCalculator.formatTime(schedule.next.time), style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w900)),
+          ]),
+          const SizedBox(height: 6),
+          Text(PrayerCalculator.remainingLabel(now, schedule.next.time)),
+          const SizedBox(height: 12),
+          LinearProgressIndicator(value: _dayProgress(now), minHeight: 7, borderRadius: BorderRadius.circular(8)),
+          const SizedBox(height: 8),
+          const Text('طريقة الحساب: كراتشي • العصر: حنفي', style: TextStyle(fontSize: 12)),
+        ])),
+        const SizedBox(height: 18),
+        Text('مواقيت اليوم', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
         const SizedBox(height: 10),
-        const Text('اختر مدينة لعرض مواقيت دقيقة', style: TextStyle(fontWeight: FontWeight.w800)),
-        const SizedBox(height: 6),
-        const Text('يمكنك اختيار المدينة يدوياً أو استخدام موقعك عند فتح التطبيق.', textAlign: TextAlign.center),
-        const SizedBox(height: 12),
-        OutlinedButton(onPressed: onChooseCity, child: const Text('اختيار المدينة')),
-      ])) else _MueenCard(child: const Text('سيظهر جدول المواقيت المحسوب هنا بعد ربط محرك مواقيت الصلاة.')),
-      const SizedBox(height: 12),
-      _MueenCard(child: ListTile(
-        contentPadding: EdgeInsets.zero,
-        leading: Icon(Icons.explore_outlined, color: theme.colorScheme.primary),
-        title: const Text('بوصلة القبلة', style: TextStyle(fontWeight: FontWeight.w800)),
-        subtitle: const Text('اتجاه الكعبة مع معايرة وحالة دقة المستشعر.'),
-        trailing: const Icon(Icons.chevron_left_rounded),
-        onTap: () => _showGentleMessage(context, 'ستعمل البوصلة بعد ربط حساسات الهاتف وحساب اتجاه القبلة.'),
-      )),
+        ...schedule.entries.map((entry) => Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: _MueenCard(
+            color: entry.id == schedule.next.id ? theme.colorScheme.primaryContainer : null,
+            child: Row(children: [
+              Icon(entry.id == schedule.next.id ? Icons.notifications_active_rounded : Icons.notifications_none_rounded, color: entry.id == schedule.next.id ? const Color(0xFFC58A28) : theme.colorScheme.primary),
+              const SizedBox(width: 12),
+              Expanded(child: Text(entry.label, style: const TextStyle(fontWeight: FontWeight.w900))),
+              Text(PrayerCalculator.formatTime(entry.time), style: const TextStyle(fontWeight: FontWeight.w900)),
+            ]),
+          ),
+        )),
+        const SizedBox(height: 10),
+        Row(children: [
+          Expanded(child: _PrayerQuickAction(icon: Icons.explore_outlined, label: 'القبلة', onTap: () => _showGentleMessage(context, 'ستعمل البوصلة بعد ربط حساسات الهاتف وحساب اتجاه القبلة.'))),
+          const SizedBox(width: 10),
+          Expanded(child: _PrayerQuickAction(icon: Icons.calendar_month_outlined, label: 'التقويم', onTap: () => _showGentleMessage(context, 'سيظهر التقويم الكامل والمناسبات في التحديث التالي.'))),
+          const SizedBox(width: 10),
+          Expanded(child: _PrayerQuickAction(icon: Icons.volume_off_outlined, label: 'وضع الجامع', onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const MasjidModeScreen())))),
+        ]),
+      ],
     ]);
   }
+}
+
+class _PrayerQuickAction extends StatelessWidget {
+  const _PrayerQuickAction({required this.icon, required this.label, required this.onTap});
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: _MueenCard(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Column(children: [Icon(icon, color: Theme.of(context).colorScheme.primary), const SizedBox(height: 6), Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800))]),
+          ),
+        ),
+      );
+}
+
+double _dayProgress(DateTime now) {
+  final minutes = now.hour * 60 + now.minute;
+  return (minutes / (24 * 60)).clamp(0, 1).toDouble();
 }
 
 class _DhikrTab extends StatelessWidget {
