@@ -211,11 +211,20 @@ class _FeatureScaffold extends StatelessWidget {
   final String subtitle;
   final Widget body;
   @override
-  Widget build(BuildContext context) => Scaffold(
-        backgroundColor: MueenColors.ivory,
-        appBar: AppBar(backgroundColor: MueenColors.ivory, surfaceTintColor: Colors.transparent, centerTitle: true, title: Column(children: [Text(title, style: const TextStyle(color: MueenColors.ink, fontWeight: FontWeight.w900)), Text(subtitle, style: const TextStyle(color: MueenColors.muted, fontSize: 10))]), leading: IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.arrow_forward_rounded, color: MueenColors.forest))),
-        body: body,
-      );
+  Widget build(BuildContext context) {
+    final palette = MueenPalette.of(context);
+    return Scaffold(
+      backgroundColor: palette.background,
+      appBar: AppBar(
+        backgroundColor: palette.background,
+        surfaceTintColor: Colors.transparent,
+        centerTitle: true,
+        title: Column(children: [Text(title, style: TextStyle(color: palette.ink, fontWeight: FontWeight.w900)), Text(subtitle, style: TextStyle(color: palette.muted, fontSize: 10))]),
+        leading: IconButton(onPressed: () => Navigator.pop(context), icon: Icon(Icons.arrow_forward_rounded, color: palette.isDark ? const Color(0xFFBDE9CC) : MueenColors.forest)),
+      ),
+      body: body,
+    );
+  }
 }
 
 class _HeroPanel extends StatelessWidget {
@@ -225,7 +234,10 @@ class _HeroPanel extends StatelessWidget {
   final String body;
   final IconData icon;
   @override
-  Widget build(BuildContext context) => MueenSurface(radius: 27, color: const Color(0xFFF9F2E2), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [MueenIconBubble(icon: icon, color: MueenColors.gold, size: 43), const SizedBox(width: 12), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(eyebrow, style: const TextStyle(color: MueenColors.muted, fontSize: 11, fontWeight: FontWeight.w800)), const SizedBox(height: 6), Text(title, style: const TextStyle(fontSize: 23, fontWeight: FontWeight.w900, color: MueenColors.ink)), const SizedBox(height: 5), Text(body, style: const TextStyle(color: MueenColors.muted, fontSize: 11, height: 1.55))]))]));
+  Widget build(BuildContext context) {
+    final palette = MueenPalette.of(context);
+    return MueenSurface(radius: 27, color: palette.surfaceSoft, child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [MueenIconBubble(icon: icon, color: MueenColors.gold, size: 43), const SizedBox(width: 12), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(eyebrow, style: TextStyle(color: palette.muted, fontSize: 11, fontWeight: FontWeight.w800)), const SizedBox(height: 6), Text(title, style: TextStyle(fontSize: 23, fontWeight: FontWeight.w900, color: palette.ink)), const SizedBox(height: 5), Text(body, style: TextStyle(color: palette.muted, fontSize: 11, height: 1.55))]))]));
+  }
 }
 
 class _SettingRow extends StatelessWidget {
@@ -236,7 +248,10 @@ class _SettingRow extends StatelessWidget {
   final Widget? trailing;
   final VoidCallback? onTap;
   @override
-  Widget build(BuildContext context) => InkWell(onTap: onTap, borderRadius: BorderRadius.circular(14), child: Padding(padding: const EdgeInsets.symmetric(vertical: 9), child: Row(children: [MueenIconBubble(icon: icon, size: 36), const SizedBox(width: 10), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: const TextStyle(fontWeight: FontWeight.w900, color: MueenColors.ink)), const SizedBox(height: 2), Text(detail, style: const TextStyle(color: MueenColors.muted, fontSize: 11))])), if (trailing != null) trailing!])));
+  Widget build(BuildContext context) {
+    final palette = MueenPalette.of(context);
+    return InkWell(onTap: onTap, borderRadius: BorderRadius.circular(14), child: Padding(padding: const EdgeInsets.symmetric(vertical: 9), child: Row(children: [MueenIconBubble(icon: icon, size: 36), const SizedBox(width: 10), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: TextStyle(fontWeight: FontWeight.w900, color: palette.ink)), const SizedBox(height: 2), Text(detail, style: TextStyle(color: palette.muted, fontSize: 11))])), if (trailing != null) trailing!])));
+  }
 }
 
 class _StatusPill extends StatelessWidget {

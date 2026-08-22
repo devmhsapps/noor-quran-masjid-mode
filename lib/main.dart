@@ -31,6 +31,15 @@ class MueenApp extends StatefulWidget {
 
 class _MueenAppState extends State<MueenApp> {
   ThemeMode _themeMode = ThemeMode.light;
+  bool _booting = true;
+
+  @override
+  void initState() {
+    super.initState();
+    Timer(const Duration(milliseconds: 1550), () {
+      if (mounted) setState(() => _booting = false);
+    });
+  }
 
   void _toggleTheme() {
     setState(() {
@@ -63,10 +72,12 @@ class _MueenAppState extends State<MueenApp> {
       ),
       home: Directionality(
         textDirection: TextDirection.rtl,
-        child: MueenShell(
-          isDark: _themeMode == ThemeMode.dark,
-          onToggleTheme: _toggleTheme,
-        ),
+        child: _booting
+            ? const MueenLaunchScreen()
+            : MueenShell(
+                isDark: _themeMode == ThemeMode.dark,
+                onToggleTheme: _toggleTheme,
+              ),
       ),
     );
   }
@@ -85,7 +96,6 @@ class _MasjidModeScreenState extends State<MasjidModeScreen>
   final _minutes = TextEditingController(text: '2');
   final _seconds = TextEditingController(text: '0');
   Timer? _timer;
-  bool _opening = true;
   bool _busy = false;
   bool _notificationsGranted = false;
   bool _locationGranted = false;
@@ -105,9 +115,6 @@ class _MasjidModeScreenState extends State<MasjidModeScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _loadInitialState();
-    Timer(const Duration(milliseconds: 2200), () {
-      if (mounted) setState(() => _opening = false);
-    });
   }
 
   @override
@@ -311,8 +318,6 @@ class _MasjidModeScreenState extends State<MasjidModeScreen>
 
   @override
   Widget build(BuildContext context) {
-    if (_opening) return const _OpeningPage();
-
     final active = _status.active && _remainingSeconds > 0;
     final display = active ? formatDuration(_remainingSeconds) : formatDuration(_selectedSeconds);
     return Scaffold(
@@ -325,7 +330,12 @@ class _MasjidModeScreenState extends State<MasjidModeScreen>
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const _BrandMark(),
+                  IconButton(
+                    tooltip: 'رجوع',
+                    onPressed: () => Navigator.of(context).maybePop(),
+                    style: IconButton.styleFrom(backgroundColor: const Color(0xFFE8F1EB), foregroundColor: const Color(0xFF0B3D2E)),
+                    icon: const Icon(Icons.arrow_forward_rounded),
+                  ),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: const [
@@ -380,8 +390,8 @@ class _MasjidModeScreenState extends State<MasjidModeScreen>
   }
 }
 
-class _OpeningPage extends StatelessWidget {
-  const _OpeningPage();
+class MueenLaunchScreen extends StatelessWidget {
+  const MueenLaunchScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -764,16 +774,17 @@ class _HomeTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final palette = MueenPalette.of(context);
     final schedule = PrayerCalculator.forCity(city);
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 10, 20, 28),
       children: [
         Row(children: [
-          Expanded(child: Text('السبت ${DateTime.now().day} آب', style: theme.textTheme.titleMedium?.copyWith(color: MueenColors.ink, fontWeight: FontWeight.w900))),
+          Expanded(child: Text('السبت ${DateTime.now().day} آب', style: theme.textTheme.titleMedium?.copyWith(color: palette.ink, fontWeight: FontWeight.w900))),
           const MueenIconBubble(icon: Icons.auto_stories_rounded, color: MueenColors.gold, size: 38),
         ]),
         const SizedBox(height: 3),
-        const Text('رفيقك اليومي للقرآن والصلاة', style: TextStyle(color: MueenColors.muted, fontWeight: FontWeight.w700)),
+        Text('رفيقك اليومي للقرآن والصلاة', style: TextStyle(color: palette.muted, fontWeight: FontWeight.w700)),
         const SizedBox(height: 14),
         _PrayerHeroCard(schedule: schedule, city: city, onOpenPrayer: onOpenPrayer),
         const SizedBox(height: 13),
@@ -816,6 +827,7 @@ class _PrayerHeroCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final now = DateTime.now();
     final ready = schedule != null;
+    final palette = MueenPalette.of(context);
     return InkWell(
       onTap: onOpenPrayer,
       borderRadius: BorderRadius.circular(31),
@@ -835,19 +847,19 @@ class _PrayerHeroCard extends StatelessWidget {
             child: Stack(alignment: Alignment.center, children: [
               Container(width: 220, height: 220, decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: MueenColors.forest, width: 17))),
               Container(width: 220, height: 220, decoration: BoxDecoration(shape: BoxShape.circle, border: Border(top: const BorderSide(color: MueenColors.gold, width: 17), right: const BorderSide(color: MueenColors.gold, width: 17)))),
-              Container(width: 177, height: 177, decoration: const BoxDecoration(shape: BoxShape.circle, color: MueenColors.paper)),
+              Container(width: 177, height: 177, decoration: BoxDecoration(shape: BoxShape.circle, color: palette.surface)),
               Column(mainAxisSize: MainAxisSize.min, children: [
-                Text(ready ? 'الصلاة التالية' : 'المواقيت المحلية', style: const TextStyle(color: MueenColors.muted, fontWeight: FontWeight.w800)),
+                Text(ready ? 'الصلاة التالية' : 'المواقيت المحلية', style: TextStyle(color: palette.muted, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 6),
-                Text(ready ? PrayerCalculator.formatTime(schedule!.next.time) : '--:--', style: const TextStyle(color: MueenColors.forest, fontSize: 41, fontWeight: FontWeight.w900, letterSpacing: 1)),
-                Text(ready ? schedule!.next.label : 'اختر مدينة', style: const TextStyle(color: MueenColors.ink, fontSize: 19, fontWeight: FontWeight.w900)),
+                Text(ready ? PrayerCalculator.formatTime(schedule!.next.time) : '--:--', style: TextStyle(color: palette.isDark ? const Color(0xFFBDE9CC) : MueenColors.forest, fontSize: 41, fontWeight: FontWeight.w900, letterSpacing: 1)),
+                Text(ready ? schedule!.next.label : 'اختر مدينة', style: TextStyle(color: palette.ink, fontSize: 19, fontWeight: FontWeight.w900)),
                 const SizedBox(height: 4),
-                Text(ready ? PrayerCalculator.remainingLabel(now, schedule!.next.time) : 'تعمل دون إنترنت', style: const TextStyle(color: MueenColors.muted, fontSize: 11, fontWeight: FontWeight.w700)),
+                Text(ready ? PrayerCalculator.remainingLabel(now, schedule!.next.time) : 'تعمل دون إنترنت', style: TextStyle(color: palette.muted, fontSize: 11, fontWeight: FontWeight.w700)),
               ]),
             ]),
           ),
-          const Divider(color: MueenColors.line),
-          Text(ready ? 'المواقيت محسوبة محلياً حسب مدينتك' : 'اختر مدينة أو استخدم موقعك لاحقاً', style: const TextStyle(color: MueenColors.muted, fontSize: 11)),
+          Divider(color: palette.line),
+          Text(ready ? 'المواقيت محسوبة محلياً حسب مدينتك' : 'اختر مدينة أو استخدم موقعك لاحقاً', style: TextStyle(color: palette.muted, fontSize: 11)),
         ]),
       ),
     );

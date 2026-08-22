@@ -12,6 +12,24 @@ abstract final class MueenColors {
   static const line = Color(0xFFE5E4DB);
 }
 
+class MueenPalette {
+  const MueenPalette._({required this.isDark});
+  final bool isDark;
+
+  static MueenPalette of(BuildContext context) => MueenPalette._(isDark: Theme.of(context).brightness == Brightness.dark);
+
+  Color get background => isDark ? const Color(0xFF0B1713) : MueenColors.ivory;
+  Color get surface => isDark ? const Color(0xFF12261D) : MueenColors.paper;
+  Color get surfaceSoft => isDark ? const Color(0xFF193126) : const Color(0xFFF9F2E2);
+  Color get ink => isDark ? const Color(0xFFF2F5EF) : MueenColors.ink;
+  Color get muted => isDark ? const Color(0xFFB1C2B7) : MueenColors.muted;
+  Color get line => isDark ? const Color(0xFF294438) : MueenColors.line;
+  Color get iconBackground => isDark ? const Color(0xFF1C3B2C) : MueenColors.mint;
+  Color get actionBackground => isDark ? const Color(0xFF1C3B2C) : MueenColors.forest;
+  Color get actionForeground => isDark ? const Color(0xFFBDE9CC) : Colors.white;
+  Color get shadow => isDark ? Colors.black.withValues(alpha: .26) : const Color(0x0F083C2E);
+}
+
 class MueenPageHeader extends StatelessWidget {
   const MueenPageHeader({
     super.key,
@@ -30,6 +48,7 @@ class MueenPageHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = MueenPalette.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(18, 10, 18, 8),
       child: Row(
@@ -40,9 +59,9 @@ class MueenPageHeader extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: MueenColors.ink)),
+                Text(title, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: palette.ink)),
                 const SizedBox(height: 1),
-                Text(subtitle, style: const TextStyle(fontSize: 10, color: MueenColors.muted, fontWeight: FontWeight.w700)),
+                Text(subtitle, style: TextStyle(fontSize: 10, color: palette.muted, fontWeight: FontWeight.w700)),
               ],
             ),
           ),
@@ -61,19 +80,22 @@ class _CircleAction extends StatelessWidget {
   final bool gold;
 
   @override
-  Widget build(BuildContext context) => Material(
-        color: gold ? MueenColors.gold.withValues(alpha: .14) : MueenColors.forest,
-        shape: const CircleBorder(),
-        child: InkWell(
-          onTap: onTap,
-          customBorder: const CircleBorder(),
-          child: SizedBox(
-            width: 42,
-            height: 42,
-            child: Icon(icon, color: gold ? MueenColors.gold : Colors.white, size: 21),
-          ),
+  Widget build(BuildContext context) {
+    final palette = MueenPalette.of(context);
+    return Material(
+      color: gold ? MueenColors.gold.withValues(alpha: .14) : palette.actionBackground,
+      shape: const CircleBorder(),
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: SizedBox(
+          width: 42,
+          height: 42,
+          child: Icon(icon, color: gold ? MueenColors.gold : palette.actionForeground, size: 21),
         ),
-      );
+      ),
+    );
+  }
 }
 
 class MueenSurface extends StatelessWidget {
@@ -86,13 +108,14 @@ class MueenSurface extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = MueenPalette.of(context);
     final body = Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: color ?? MueenColors.paper,
+        color: color ?? palette.surface,
         borderRadius: BorderRadius.circular(radius),
-        border: Border.all(color: MueenColors.line),
-        boxShadow: const [BoxShadow(color: Color(0x0F083C2E), blurRadius: 17, offset: Offset(0, 7))],
+        border: Border.all(color: palette.line),
+        boxShadow: [BoxShadow(color: palette.shadow, blurRadius: 17, offset: const Offset(0, 7))],
       ),
       child: child,
     );
@@ -108,12 +131,16 @@ class MueenIconBubble extends StatelessWidget {
   final double size;
 
   @override
-  Widget build(BuildContext context) => Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(shape: BoxShape.circle, color: color.withValues(alpha: .11)),
-        child: Icon(icon, color: color, size: size * .52),
-      );
+  Widget build(BuildContext context) {
+    final palette = MueenPalette.of(context);
+    final effectiveColor = color == MueenColors.forest && palette.isDark ? const Color(0xFFBDE9CC) : color;
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(shape: BoxShape.circle, color: palette.isDark ? palette.iconBackground : effectiveColor.withValues(alpha: .11)),
+      child: Icon(icon, color: effectiveColor, size: size * .52),
+    );
+  }
 }
 
 class MueenSectionLabel extends StatelessWidget {
@@ -123,14 +150,17 @@ class MueenSectionLabel extends StatelessWidget {
   final VoidCallback? onAction;
 
   @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.fromLTRB(3, 20, 3, 9),
-        child: Row(children: [
-          Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: MueenColors.ink)),
-          const Spacer(),
-          if (action != null) TextButton(onPressed: onAction, child: Text(action!, style: const TextStyle(color: MueenColors.gold, fontWeight: FontWeight.w900))),
-        ]),
-      );
+  Widget build(BuildContext context) {
+    final palette = MueenPalette.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(3, 20, 3, 9),
+      child: Row(children: [
+        Text(title, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: palette.ink)),
+        const Spacer(),
+        if (action != null) TextButton(onPressed: onAction, child: Text(action!, style: const TextStyle(color: MueenColors.gold, fontWeight: FontWeight.w900))),
+      ]),
+    );
+  }
 }
 
 class MueenToggle extends StatelessWidget {
