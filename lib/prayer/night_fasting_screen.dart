@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import 'prayer_calculator.dart';
+import '../ui/mueen_design.dart';
 
 class NightFastingScreen extends StatefulWidget {
   const NightFastingScreen({super.key, required this.city});
@@ -33,9 +34,11 @@ class _NightFastingScreenState extends State<NightFastingScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final palette = MueenPalette.of(context);
     final now = DateTime.now();
     final info = PrayerCalculator.nightFastingForCity(widget.city, now: now);
     return Scaffold(
+      backgroundColor: palette.background,
       appBar: AppBar(title: const Text('ليلتي وصيامي')),
       body: info == null
           ? _NoCity(onBack: () => Navigator.pop(context))
@@ -78,24 +81,24 @@ class _NightHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final palette = MueenPalette.of(context);
     final afterIftar = now.isAfter(info.maghrib) && now.isBefore(info.nextFajr);
     final target = afterIftar ? info.nextFajr : info.maghrib;
     final label = afterIftar ? 'المتبقي لفجر الغد' : 'المتبقي للإفطار';
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(colors: [theme.colorScheme.primary, theme.colorScheme.primary.withValues(alpha: .72)], begin: Alignment.topRight, end: Alignment.bottomLeft),
+        gradient: LinearGradient(colors: [palette.primaryStrong, palette.primaryStrong.withValues(alpha: .72)], begin: Alignment.topRight, end: Alignment.bottomLeft),
         borderRadius: BorderRadius.circular(26),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [const Icon(Icons.nights_stay_outlined, color: Color(0xFFF8F5EE)), const SizedBox(width: 8), Text(city, style: const TextStyle(color: Color(0xFFF8F5EE), fontWeight: FontWeight.w800))]),
+        Row(children: [Icon(Icons.nights_stay_outlined, color: palette.actionForeground), const SizedBox(width: 8), Text(city, style: TextStyle(color: palette.actionForeground, fontWeight: FontWeight.w800))]),
         const SizedBox(height: 18),
-        Text(label, style: const TextStyle(color: Color(0xFFF8F5EE), fontSize: 16)),
+        Text(label, style: TextStyle(color: palette.actionForeground, fontSize: 16)),
         const SizedBox(height: 6),
-        Text(PrayerCalculator.remainingLabel(now, target), style: const TextStyle(color: Color(0xFFF8F5EE), fontSize: 28, fontWeight: FontWeight.w900)),
+        Text(PrayerCalculator.remainingLabel(now, target), style: TextStyle(color: palette.actionForeground, fontSize: 28, fontWeight: FontWeight.w900)),
         const SizedBox(height: 8),
-        Text(afterIftar ? 'بعد الإفطار حتى الفجر: ${PrayerCalculator.formatDuration(info.afterIftarDuration)}' : 'مدة صيام اليوم: ${PrayerCalculator.formatDuration(info.fastingDuration)}', style: const TextStyle(color: Color(0xFFF8F5EE))),
+        Text(afterIftar ? 'بعد الإفطار حتى الفجر: ${PrayerCalculator.formatDuration(info.afterIftarDuration)}' : 'مدة صيام اليوم: ${PrayerCalculator.formatDuration(info.fastingDuration)}', style: TextStyle(color: palette.actionForeground)),
       ]),
     );
   }
@@ -110,16 +113,14 @@ class _TimeCard extends StatelessWidget {
   final String time;
 
   @override
-  Widget build(BuildContext context) => Card(
-        child: Padding(
-          padding: const EdgeInsets.all(15),
-          child: Row(children: [
-            CircleAvatar(backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: .12), child: Icon(icon, color: Theme.of(context).colorScheme.primary)),
-            const SizedBox(width: 12),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(label, style: const TextStyle(fontWeight: FontWeight.w900)), const SizedBox(height: 3), Text(detail, style: Theme.of(context).textTheme.bodySmall)])),
-            Text(time, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
-          ]),
-        ),
+  Widget build(BuildContext context) => MueenSurface(
+        padding: const EdgeInsets.all(15),
+        child: Row(children: [
+          MueenIconBubble(icon: icon, size: 42),
+          const SizedBox(width: 12),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(label, style: const TextStyle(fontWeight: FontWeight.w900)), const SizedBox(height: 3), Text(detail, style: Theme.of(context).textTheme.bodySmall)])),
+          Text(time, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+        ]),
       );
 }
 
@@ -131,14 +132,17 @@ class _MetricCard extends StatelessWidget {
   final IconData icon;
 
   @override
-  Widget build(BuildContext context) => Card(
-        color: Theme.of(context).colorScheme.primaryContainer,
+  Widget build(BuildContext context) {
+    final palette = MueenPalette.of(context);
+    return MueenSurface(
+        color: palette.selection,
         child: ListTile(
-          leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
+          leading: Icon(icon, color: palette.primary),
           title: Text(label, style: const TextStyle(fontWeight: FontWeight.w900)),
           trailing: Text(value, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
         ),
       );
+  }
 }
 
 class _NoCity extends StatelessWidget {

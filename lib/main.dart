@@ -61,6 +61,11 @@ class _MueenAppState extends State<MueenApp> {
         scaffoldBackgroundColor: const Color(0xFFF8F5EE),
         appBarTheme: const AppBarTheme(backgroundColor: Color(0xFFF8F5EE), foregroundColor: Color(0xFF17251F), elevation: 0, surfaceTintColor: Colors.transparent),
         navigationBarTheme: NavigationBarThemeData(backgroundColor: const Color(0xFFF0F4EF), indicatorColor: const Color(0xFFD6F0E2), labelTextStyle: WidgetStateProperty.all(const TextStyle(fontWeight: FontWeight.w800, fontSize: 12))),
+        dialogTheme: const DialogThemeData(backgroundColor: MueenColors.paper, surfaceTintColor: Colors.transparent, titleTextStyle: TextStyle(color: MueenColors.ink, fontWeight: FontWeight.w900, fontSize: 20), contentTextStyle: TextStyle(color: MueenColors.muted, height: 1.6)),
+        bottomSheetTheme: const BottomSheetThemeData(backgroundColor: MueenColors.paper, surfaceTintColor: Colors.transparent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28)))),
+        drawerTheme: const DrawerThemeData(backgroundColor: MueenColors.paper, surfaceTintColor: Colors.transparent),
+        snackBarTheme: const SnackBarThemeData(backgroundColor: MueenColors.forest, contentTextStyle: TextStyle(color: Colors.white, fontWeight: FontWeight.w700), behavior: SnackBarBehavior.floating),
+        inputDecorationTheme: InputDecorationTheme(filled: true, fillColor: const Color(0xFFF6F1E6), labelStyle: const TextStyle(color: MueenColors.muted), border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: MueenColors.line)), enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: MueenColors.line)), focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: MueenColors.forest, width: 1.4))),
       ),
       darkTheme: ThemeData(
         useMaterial3: true,
@@ -69,6 +74,11 @@ class _MueenAppState extends State<MueenApp> {
         scaffoldBackgroundColor: const Color(0xFF0B1713),
         appBarTheme: const AppBarTheme(backgroundColor: Color(0xFF0B1713), foregroundColor: Color(0xFFF2F4EE), elevation: 0, surfaceTintColor: Colors.transparent),
         navigationBarTheme: NavigationBarThemeData(backgroundColor: const Color(0xFF10221B), indicatorColor: const Color(0xFF1D513C), labelTextStyle: WidgetStateProperty.all(const TextStyle(fontWeight: FontWeight.w800, fontSize: 12))),
+        dialogTheme: const DialogThemeData(backgroundColor: Color(0xFF173025), surfaceTintColor: Colors.transparent, titleTextStyle: TextStyle(color: Color(0xFFF2F5EF), fontWeight: FontWeight.w900, fontSize: 20), contentTextStyle: TextStyle(color: Color(0xFFB1C2B7), height: 1.6)),
+        bottomSheetTheme: const BottomSheetThemeData(backgroundColor: Color(0xFF173025), surfaceTintColor: Colors.transparent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28)))),
+        drawerTheme: const DrawerThemeData(backgroundColor: Color(0xFF12261D), surfaceTintColor: Colors.transparent),
+        snackBarTheme: const SnackBarThemeData(backgroundColor: Color(0xFF1C3B2C), contentTextStyle: TextStyle(color: Color(0xFFF2F5EF), fontWeight: FontWeight.w700), behavior: SnackBarBehavior.floating),
+        inputDecorationTheme: InputDecorationTheme(filled: true, fillColor: const Color(0xFF0F2119), labelStyle: const TextStyle(color: Color(0xFFB1C2B7)), border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0xFF294438))), enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0xFF294438))), focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0xFFBDE9CC), width: 1.4))),
       ),
       home: Directionality(
         textDirection: TextDirection.rtl,
@@ -318,10 +328,11 @@ class _MasjidModeScreenState extends State<MasjidModeScreen>
 
   @override
   Widget build(BuildContext context) {
+    final palette = MueenPalette.of(context);
     final active = _status.active && _remainingSeconds > 0;
     final display = active ? formatDuration(_remainingSeconds) : formatDuration(_selectedSeconds);
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F5EE),
+      backgroundColor: palette.background,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
@@ -333,15 +344,15 @@ class _MasjidModeScreenState extends State<MasjidModeScreen>
                   IconButton(
                     tooltip: 'رجوع',
                     onPressed: () => Navigator.of(context).maybePop(),
-                    style: IconButton.styleFrom(backgroundColor: const Color(0xFFE8F1EB), foregroundColor: const Color(0xFF0B3D2E)),
+                    style: IconButton.styleFrom(backgroundColor: palette.iconBackground, foregroundColor: palette.primary),
                     icon: const Icon(Icons.arrow_forward_rounded),
                   ),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
-                    children: const [
-                      Text('وضع الجامع', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: Color(0xFF18221F))),
+                    children: [
+                      Text('وضع الجامع', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: palette.ink)),
                       SizedBox(height: 3),
-                      Text('هدوء مؤقت باحترام وطمأنينة', style: TextStyle(color: Color(0xFF66726D))),
+                      Text('هدوء مؤقت باحترام وطمأنينة', style: TextStyle(color: palette.muted)),
                     ],
                   ),
                 ],
@@ -372,8 +383,8 @@ class _MasjidModeScreenState extends State<MasjidModeScreen>
                   icon: Icon(active ? Icons.close_rounded : !_status.dndAccessGranted ? Icons.settings_rounded : !_status.exactAlarmGranted ? Icons.alarm_add_rounded : !_status.batteryUnrestricted ? Icons.battery_charging_full_rounded : Icons.volume_off_rounded),
                   label: Text(active ? 'إلغاء وضع الجامع' : !_status.dndAccessGranted ? 'منح صلاحية وضع الجامع' : !_status.exactAlarmGranted ? 'السماح بالمنبّه الدقيق' : !_status.batteryUnrestricted ? 'إعداد البطارية' : 'تفعيل وضع الجامع'),
                   style: FilledButton.styleFrom(
-                    backgroundColor: active ? const Color(0xFFB44949) : const Color(0xFF0B3D2E),
-                    foregroundColor: Colors.white,
+                    backgroundColor: active ? palette.destructive : palette.primaryStrong,
+                    foregroundColor: active ? Colors.white : palette.actionForeground,
                     padding: const EdgeInsets.symmetric(vertical: 17),
                     textStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
@@ -381,7 +392,7 @@ class _MasjidModeScreenState extends State<MasjidModeScreen>
                 ),
               ),
               const SizedBox(height: 10),
-              const Text('يحفظ التطبيق وضع الهاتف السابق ويعيده تلقائياً عند انتهاء الجلسة.', textAlign: TextAlign.center, style: TextStyle(fontSize: 12, color: Color(0xFF66726D))),
+              Text('يحفظ التطبيق وضع الهاتف السابق ويعيده تلقائياً عند انتهاء الجلسة.', textAlign: TextAlign.center, style: TextStyle(fontSize: 12, color: palette.muted)),
             ],
           ),
         ),
@@ -461,33 +472,36 @@ class _StatusCard extends StatelessWidget {
   final bool setupComplete;
 
   @override
-  Widget build(BuildContext context) => Container(
+  Widget build(BuildContext context) {
+    final palette = MueenPalette.of(context);
+    return Container(
         width: double.infinity,
         padding: const EdgeInsets.all(22),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(28), border: Border.all(color: const Color(0xFFD9DED6)), boxShadow: const [BoxShadow(color: Color(0x11000000), blurRadius: 18, offset: Offset(0, 8))]),
+        decoration: BoxDecoration(color: palette.surface, borderRadius: BorderRadius.circular(28), border: Border.all(color: palette.line), boxShadow: [BoxShadow(color: palette.shadow, blurRadius: 18, offset: const Offset(0, 8))]),
         child: Column(
           children: [
             Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
               _Pill(label: active ? 'مفعّل' : dndGranted && exactAlarmGranted && batteryUnrestricted ? 'جاهز' : 'صلاحية مطلوبة', color: active ? const Color(0xFFC58A28) : dndGranted && exactAlarmGranted && batteryUnrestricted ? const Color(0xFF2F7A4C) : const Color(0xFF66726D)),
-              Text(active ? 'الوقت المتبقي' : 'المدة المختارة', style: const TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF18221F))),
+              Text(active ? 'الوقت المتبقي' : 'المدة المختارة', style: TextStyle(fontWeight: FontWeight.w700, color: palette.ink)),
             ]),
             const SizedBox(height: 20),
-            Text(time, style: const TextStyle(fontSize: 52, fontWeight: FontWeight.w800, letterSpacing: 2, color: Color(0xFF0B3D2E))),
+            Text(time, style: TextStyle(fontSize: 52, fontWeight: FontWeight.w800, letterSpacing: 2, color: palette.primary)),
             const SizedBox(height: 16),
-            Text(message, textAlign: TextAlign.center, style: const TextStyle(color: Color(0xFF66726D), height: 1.6)),
+            Text(message, textAlign: TextAlign.center, style: TextStyle(color: palette.muted, height: 1.6)),
             const SizedBox(height: 16),
             Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              Icon(notificationsGranted ? Icons.notifications_active_rounded : Icons.notifications_off_rounded, size: 16, color: const Color(0xFF66726D)),
+              Icon(notificationsGranted ? Icons.notifications_active_rounded : Icons.notifications_off_rounded, size: 16, color: palette.muted),
               const SizedBox(width: 6),
-              Text(notificationsGranted ? 'الإشعارات مفعّلة' : 'الإشعارات غير مفعّلة', style: const TextStyle(fontSize: 12, color: Color(0xFF66726D))),
+              Text(notificationsGranted ? 'الإشعارات مفعّلة' : 'الإشعارات غير مفعّلة', style: TextStyle(fontSize: 12, color: palette.muted)),
             ]),
-            if (!setupComplete) const Padding(
+            if (!setupComplete) Padding(
               padding: EdgeInsets.only(top: 8),
-              child: Text('عند أول تفعيل، سيشرح التطبيق الصلاحيات المطلوبة خطوة بخطوة.', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, color: Color(0xFF66726D))),
+              child: Text('عند أول تفعيل، سيشرح التطبيق الصلاحيات المطلوبة خطوة بخطوة.', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, color: palette.muted)),
             ),
           ],
         ),
       );
+  }
 }
 
 class _Pill extends StatelessWidget {
@@ -505,11 +519,13 @@ class _TimeInputs extends StatelessWidget {
   final TextEditingController seconds;
 
   @override
-  Widget build(BuildContext context) => Container(
+  Widget build(BuildContext context) {
+    final palette = MueenPalette.of(context);
+    return Container(
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24), border: Border.all(color: const Color(0xFFD9DED6))),
+        decoration: BoxDecoration(color: palette.surface, borderRadius: BorderRadius.circular(24), border: Border.all(color: palette.line)),
         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          const Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text('مدة مخصصة', style: TextStyle(fontWeight: FontWeight.w800)), Text('حتى 24 ساعة', style: TextStyle(fontSize: 12, color: Color(0xFF66726D)))]),
+          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text('مدة مخصصة', style: TextStyle(fontWeight: FontWeight.w800, color: palette.ink)), Text('حتى 24 ساعة', style: TextStyle(fontSize: 12, color: palette.muted))]),
           const SizedBox(height: 14),
           Row(children: [
             _TimeField(label: 'ساعات', controller: hours),
@@ -520,6 +536,7 @@ class _TimeInputs extends StatelessWidget {
           ]),
         ]),
       );
+  }
 }
 
 class _TimeField extends StatelessWidget {
@@ -527,7 +544,10 @@ class _TimeField extends StatelessWidget {
   final String label;
   final TextEditingController controller;
   @override
-  Widget build(BuildContext context) => Expanded(child: Column(children: [Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF66726D))), const SizedBox(height: 5), TextField(controller: controller, keyboardType: TextInputType.number, textAlign: TextAlign.center, maxLength: 2, decoration: InputDecoration(counterText: '', filled: true, fillColor: const Color(0xFFF8F5EE), contentPadding: const EdgeInsets.symmetric(vertical: 11), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none)))]));
+  Widget build(BuildContext context) {
+    final palette = MueenPalette.of(context);
+    return Expanded(child: Column(children: [Text(label, style: TextStyle(fontSize: 12, color: palette.muted)), const SizedBox(height: 5), TextField(controller: controller, keyboardType: TextInputType.number, textAlign: TextAlign.center, maxLength: 2, decoration: InputDecoration(counterText: '', fillColor: palette.surfaceSoft, contentPadding: const EdgeInsets.symmetric(vertical: 11), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none)))]));
+  }
 }
 
 class _PermissionRow extends StatelessWidget {
@@ -535,12 +555,15 @@ class _PermissionRow extends StatelessWidget {
   final bool locationGranted;
   final VoidCallback onLocationTap;
   @override
-  Widget build(BuildContext context) => OutlinedButton.icon(
+  Widget build(BuildContext context) {
+    final palette = MueenPalette.of(context);
+    return OutlinedButton.icon(
         onPressed: onLocationTap,
         icon: Icon(locationGranted ? Icons.location_on_rounded : Icons.location_on_outlined),
         label: Text(locationGranted ? 'الموقع مفعّل' : 'تحديد الموقع لمواقيت الصلاة'),
-        style: OutlinedButton.styleFrom(foregroundColor: const Color(0xFF0B3D2E), side: const BorderSide(color: Color(0xFFD9DED6)), padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
+        style: OutlinedButton.styleFrom(foregroundColor: palette.primary, side: BorderSide(color: palette.line), padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
       );
+  }
 }
 
 class MueenShell extends StatefulWidget {
@@ -581,46 +604,11 @@ class _MueenShellState extends State<MueenShell> {
     Navigator.of(context).push(MaterialPageRoute(builder: (_) => Directionality(textDirection: TextDirection.rtl, child: page)));
   }
 
-  void _chooseCity() {
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (context) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Text('اختيار المدينة', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
-              const SizedBox(height: 8),
-              const Text('اختر مدينة يدوياً الآن، أو استخدم موقعك عند تجهيز خدمة المواقيت.', style: TextStyle(height: 1.5)),
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: ['بغداد', 'مكة المكرمة', 'المدينة المنورة', 'النجف', 'البصرة'].map((city) => ChoiceChip(
-                  label: Text(city),
-                  selected: _city == city,
-                  onSelected: (_) { _saveCity(city); Navigator.pop(context); },
-                )).toList(),
-              ),
-              const SizedBox(height: 14),
-              OutlinedButton.icon(
-                onPressed: () {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(this.context).showSnackBar(const SnackBar(content: Text('سيطلب التطبيق الموقع عند تفعيل خدمة المواقيت.')));
-                },
-                icon: const Icon(Icons.my_location_rounded),
-                label: const Text('استخدام موقعي عند فتح التطبيق'),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  void _chooseCity() => _openPage(MueenLocationScreen(
+        initialCity: _city,
+        onSave: _saveCity,
+        onAutoLocate: () async => (await PrayerLocationService().detectNearestCity()).name,
+      ));
 
   Future<void> _openNightFasting() async {
     if (_city == 'اختر المدينة') {

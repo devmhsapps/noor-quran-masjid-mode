@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../ui/mueen_design.dart';
 import 'quran_reading_store.dart';
 import 'quran_repository.dart';
 
@@ -405,17 +406,18 @@ class _SavedReadingsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = MueenPalette.of(context);
     final items = <_SavedVerseItem>[];
     for (final entry in data.bookmarkColors.entries) {
-      final item = _SavedVerseItem.fromKey(entry.key, surahs, label: 'علامة ${QuranReadingStore.bookmarkColorOptions[entry.value] ?? ''}', icon: Icons.bookmark_rounded, accent: _bookmarkColor(entry.value));
+      final item = _SavedVerseItem.fromKey(entry.key, surahs, label: 'علامة ${QuranReadingStore.bookmarkColorOptions[entry.value] ?? ''}', icon: Icons.bookmark_rounded, accent: _bookmarkColor(context, entry.value));
       if (item != null) items.add(item);
     }
     for (final key in data.favorites) {
-      final item = _SavedVerseItem.fromKey(key, surahs, label: 'مفضلة', icon: Icons.star_rounded, accent: const Color(0xFFC58A28));
+      final item = _SavedVerseItem.fromKey(key, surahs, label: 'مفضلة', icon: Icons.star_rounded, accent: palette.goldAccent);
       if (item != null) items.add(item);
     }
     for (final entry in data.notes.entries) {
-      final item = _SavedVerseItem.fromKey(entry.key, surahs, label: entry.value, icon: Icons.sticky_note_2_rounded, accent: const Color(0xFF2E6F95));
+      final item = _SavedVerseItem.fromKey(entry.key, surahs, label: entry.value, icon: Icons.sticky_note_2_rounded, accent: palette.isDark ? const Color(0xFF8FC9E9) : const Color(0xFF2E6F95));
       if (item != null) items.add(item);
     }
     if (items.isEmpty) {
@@ -526,6 +528,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   Future<void> _showVerseActions(QuranVerse verse) async {
     final key = _key(verse);
     final activeBookmark = _readingData.bookmarkColors[key];
+    final palette = MueenPalette.of(context);
     final action = await showModalBottomSheet<String>(
       context: context,
       showDragHandle: true,
@@ -538,7 +541,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
               ListTile(title: Text('${widget.surah.name} • الآية ${verse.number}', style: const TextStyle(fontWeight: FontWeight.w900))),
               for (final entry in QuranReadingStore.bookmarkColorOptions.entries)
                 ListTile(
-                  leading: Icon(Icons.bookmark_rounded, color: _bookmarkColor(entry.key)),
+                  leading: Icon(Icons.bookmark_rounded, color: _bookmarkColor(context, entry.key)),
                   title: Text('علامة ${entry.value}'),
                   trailing: activeBookmark == entry.key ? const Icon(Icons.check_rounded) : null,
                   onTap: () => Navigator.pop(sheetContext, 'bookmark:${entry.key}'),
@@ -550,7 +553,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
                   onTap: () => Navigator.pop(sheetContext, 'remove-bookmark'),
                 ),
               ListTile(
-                leading: Icon(_readingData.favorites.contains(key) ? Icons.star_rounded : Icons.star_border_rounded, color: const Color(0xFFC58A28)),
+                leading: Icon(_readingData.favorites.contains(key) ? Icons.star_rounded : Icons.star_border_rounded, color: palette.goldAccent),
                 title: Text(_readingData.favorites.contains(key) ? 'إزالة من المفضلة' : 'إضافة إلى المفضلة'),
                 onTap: () => Navigator.pop(sheetContext, 'favorite'),
               ),
@@ -627,6 +630,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final palette = MueenPalette.of(context);
     return Scaffold(
       endDrawer: _QuranSurahDrawer(
         surahs: widget.allSurahs,
@@ -699,9 +703,9 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
               margin: const EdgeInsets.only(bottom: 8),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
               decoration: BoxDecoration(
-                color: highlighted ? theme.colorScheme.primaryContainer : (bookmarkType == null ? null : _bookmarkColor(bookmarkType).withValues(alpha: .07)),
+                color: highlighted ? theme.colorScheme.primaryContainer : (bookmarkType == null ? null : _bookmarkColor(context, bookmarkType).withValues(alpha: .07)),
                 borderRadius: BorderRadius.circular(14),
-                border: Border(bottom: BorderSide(color: bookmarkType == null ? theme.dividerColor.withValues(alpha: .28) : _bookmarkColor(bookmarkType).withValues(alpha: .65))),
+                border: Border(bottom: BorderSide(color: bookmarkType == null ? theme.dividerColor.withValues(alpha: .28) : _bookmarkColor(context, bookmarkType).withValues(alpha: .65))),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -712,9 +716,9 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
                       const SizedBox(width: 7),
                       Text('الآية ${verse.number}', style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.w900, fontSize: 12)),
                       const Spacer(),
-                      if (hasNote) const Padding(padding: EdgeInsets.only(left: 8), child: Icon(Icons.sticky_note_2_rounded, size: 17, color: Color(0xFF2E6F95))),
-                      if (favorite) const Padding(padding: EdgeInsets.only(left: 8), child: Icon(Icons.star_rounded, size: 17, color: Color(0xFFC58A28))),
-                      if (bookmarkType != null) Icon(Icons.bookmark_rounded, size: 17, color: _bookmarkColor(bookmarkType)),
+                      if (hasNote) Padding(padding: const EdgeInsets.only(left: 8), child: Icon(Icons.sticky_note_2_rounded, size: 17, color: palette.isDark ? const Color(0xFF8FC9E9) : const Color(0xFF2E6F95))),
+                      if (favorite) Padding(padding: const EdgeInsets.only(left: 8), child: Icon(Icons.star_rounded, size: 17, color: palette.goldAccent)),
+                      if (bookmarkType != null) Icon(Icons.bookmark_rounded, size: 17, color: _bookmarkColor(context, bookmarkType)),
                     ]),
                     const SizedBox(height: 9),
                   ],
@@ -852,17 +856,18 @@ class _QuranSurahDrawerState extends State<_QuranSurahDrawer> {
   }
 }
 
-Color _bookmarkColor(String type) {
+Color _bookmarkColor(BuildContext context, String type) {
+  final palette = MueenPalette.of(context);
   switch (type) {
     case 'green':
-      return const Color(0xFF2E7D4F);
+      return palette.isDark ? const Color(0xFF72C993) : const Color(0xFF2E7D4F);
     case 'blue':
-      return const Color(0xFF2E6F95);
+      return palette.isDark ? const Color(0xFF8FC9E9) : const Color(0xFF2E6F95);
     case 'red':
-      return const Color(0xFFB23A48);
+      return palette.isDark ? const Color(0xFFF0A2AB) : const Color(0xFFB23A48);
     case 'gold':
     default:
-      return const Color(0xFFC58A28);
+      return palette.goldAccent;
   }
 }
 

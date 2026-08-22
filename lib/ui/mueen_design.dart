@@ -27,6 +27,11 @@ class MueenPalette {
   Color get iconBackground => isDark ? const Color(0xFF1C3B2C) : MueenColors.mint;
   Color get actionBackground => isDark ? const Color(0xFF1C3B2C) : MueenColors.forest;
   Color get actionForeground => isDark ? const Color(0xFFBDE9CC) : Colors.white;
+  Color get primary => isDark ? const Color(0xFFBDE9CC) : MueenColors.forest;
+  Color get primaryStrong => isDark ? const Color(0xFF1C3B2C) : MueenColors.forest;
+  Color get goldAccent => isDark ? const Color(0xFFE8B956) : MueenColors.gold;
+  Color get selection => isDark ? const Color(0xFF1C3B2C) : MueenColors.mint;
+  Color get destructive => isDark ? const Color(0xFFF2A8A8) : const Color(0xFFB44949);
   Color get shadow => isDark ? Colors.black.withValues(alpha: .26) : const Color(0x0F083C2E);
 }
 
@@ -157,7 +162,7 @@ class MueenSectionLabel extends StatelessWidget {
       child: Row(children: [
         Text(title, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: palette.ink)),
         const Spacer(),
-        if (action != null) TextButton(onPressed: onAction, child: Text(action!, style: const TextStyle(color: MueenColors.gold, fontWeight: FontWeight.w900))),
+        if (action != null) TextButton(onPressed: onAction, child: Text(action!, style: TextStyle(color: palette.goldAccent, fontWeight: FontWeight.w900))),
       ]),
     );
   }
@@ -169,10 +174,13 @@ class MueenToggle extends StatelessWidget {
   final ValueChanged<bool> onChanged;
 
   @override
-  Widget build(BuildContext context) => Switch.adaptive(
-        value: value,
-        onChanged: onChanged,
-        activeTrackColor: MueenColors.forest,
-        activeThumbColor: Colors.white,
-      );
+  Widget build(BuildContext context) {
+    final palette = MueenPalette.of(context);
+    return Switch.adaptive(
+      value: value,
+      onChanged: onChanged,
+      activeTrackColor: palette.primaryStrong,
+      activeThumbColor: palette.actionForeground,
+    );
+  }
 }
