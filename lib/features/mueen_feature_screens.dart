@@ -279,14 +279,14 @@ class AdhanSelectionScreen extends StatefulWidget {
 }
 
 class _AdhanSelectionScreenState extends State<AdhanSelectionScreen> {
-  final _sounds = <String, String>{'الفجر': 'أذان الفجر الهادئ', 'الظهر': 'أذان بغداد القصير', 'العصر': 'غير محدد', 'المغرب': 'غير محدد', 'العشاء': 'غير محدد'};
+  final _sounds = <String, String>{'الفجر': 'Beautiful Adhan', 'الظهر': 'Beautiful Adhan', 'العصر': 'Beautiful Adhan', 'المغرب': 'Beautiful Adhan', 'العشاء': 'Beautiful Adhan'};
 
   @override
   Widget build(BuildContext context) => _FeatureScaffold(
         title: 'اختيار الأذان',
         subtitle: 'صوت مستقل لكل صلاة',
         body: ListView(padding: const EdgeInsets.fromLTRB(20, 14, 20, 28), children: [
-          const _HeroPanel(eyebrow: 'إعدادك الحالي', title: 'اختَر صوت كل صلاة', body: 'اضغط اختيار الصوت للصلاة المطلوبة، ثم استمع قبل حفظه على الجهاز.', icon: Icons.volume_up_rounded),
+          const _HeroPanel(eyebrow: 'إعدادك الحالي', title: 'صوت مَعين المحلي', body: 'Beautiful Adhan مضمّن ويعمل دون إنترنت. ستظهر خيارات أخرى بعد التحقق من ترخيصها.', icon: Icons.volume_up_rounded),
           const MueenSectionLabel(title: 'الأذان', action: 'الإقامة'),
           MueenSurface(padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 5), child: Column(children: _sounds.entries.map((entry) => _AdhanRow(
             prayer: entry.key,
@@ -294,7 +294,7 @@ class _AdhanSelectionScreenState extends State<AdhanSelectionScreen> {
             onSelect: () => _select(entry.key),
           )).toList())),
           const MueenSectionLabel(title: 'إدارة الأصوات'),
-          const MueenSurface(child: _SettingRow(icon: Icons.folder_copy_outlined, title: 'مكتبة الأصوات', detail: 'اعرض الحجم والتنزيل والحذف لاحقاً', trailing: Icon(Icons.chevron_left_rounded, color: MueenColors.gold))),
+          const MueenSurface(child: _SettingRow(icon: Icons.folder_copy_outlined, title: 'مكتبة الأصوات', detail: 'تحتوي حالياً على الصوت المضمّن المرخّص فقط', trailing: Icon(Icons.verified_rounded, color: MueenColors.gold))),
         ]),
       );
 
@@ -305,7 +305,7 @@ class _AdhanSelectionScreenState extends State<AdhanSelectionScreen> {
           child: AlertDialog(
             title: Text('اختيار صوت $prayer'),
             contentPadding: const EdgeInsetsDirectional.fromSTEB(16, 10, 16, 0),
-            content: Column(mainAxisSize: MainAxisSize.min, children: ['أذان هادئ', 'تكبير قصير', 'نغمة ورد'].map((sound) => ListTile(title: Text(sound), trailing: const Icon(Icons.play_circle_outline_rounded), onTap: () { setState(() => _sounds[prayer] = sound); Navigator.pop(dialogContext); })).toList()),
+            content: ListTile(title: const Text('Beautiful Adhan'), subtitle: const Text('الصوت المحلي المضمّن والمرخّص'), trailing: const Icon(Icons.verified_rounded), onTap: () { setState(() => _sounds[prayer] = 'Beautiful Adhan'); Navigator.pop(dialogContext); }),
             actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('إلغاء'))],
           ),
         ),
@@ -319,17 +319,15 @@ class SoundLibraryScreen extends StatelessWidget {
     final palette = MueenPalette.of(context);
     return _FeatureScaffold(
         title: 'مكتبة الأصوات',
-        subtitle: 'تنزيل صريح وحفظ محلي',
+        subtitle: 'صوت مرخّص محفوظ محلياً',
         body: ListView(padding: const EdgeInsets.fromLTRB(20, 14, 20, 28), children: [
-          const _HeroPanel(eyebrow: 'المحفوظ في جهازك', title: 'اختر صوت التنبيه', body: 'تعمل التنبيهات من النسخة المحفوظة فقط بعد التنزيل الصريح.', icon: Icons.library_music_rounded),
-          const MueenSectionLabel(title: 'أصوات هادئة', action: 'إدارة المساحة'),
+          const _HeroPanel(eyebrow: 'المحفوظ في جهازك', title: 'الصوت الأساسي لمَعين', body: 'الصوت الموجود مرخّص ومضمّن في التطبيق ويعمل دون إنترنت.', icon: Icons.library_music_rounded),
+          const MueenSectionLabel(title: 'الأصوات المتاحة محلياً'),
           MueenSurface(padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 5), child: Column(children: [
-            const _SoundRow(name: 'أذان هادئ', size: '3.8 م.ب • محفوظ', action: 'اختيار'),
-            Divider(color: palette.line),
-            const _SoundRow(name: 'تكبير قصير', size: '1.2 م.ب • متاح', action: 'تنزيل'),
-            Divider(color: palette.line),
-            const _SoundRow(name: 'نغمة ورد', size: '0.6 م.ب • متاح', action: 'تنزيل'),
+            const _SoundRow(name: 'Beautiful Adhan', size: 'مضمّن • CC0 • الصوت الافتراضي', status: 'معتمد'),
           ])),
+          const SizedBox(height: 12),
+          const Text('أصوات مكة والمدينة وبقية المؤذنين ستظهر هنا فقط بعد التحقق من ترخيص التضمين. لن يعرض مَعين زر تنزيل لصوت غير مرخّص.'),
         ]),
       );
   }
@@ -487,7 +485,7 @@ class _FeatureScaffold extends StatelessWidget {
         title: Column(children: [Text(title, style: TextStyle(color: palette.ink, fontWeight: FontWeight.w900)), Text(subtitle, style: TextStyle(color: palette.muted, fontSize: 10))]),
         leading: IconButton(onPressed: () => Navigator.pop(context), icon: Icon(Icons.arrow_forward_rounded, color: palette.primary)),
       ),
-      body: body,
+      body: SafeArea(top: false, child: body),
     );
   }
 }
@@ -542,14 +540,14 @@ class _AdhanRow extends StatelessWidget {
 }
 
 class _SoundRow extends StatelessWidget {
-  const _SoundRow({required this.name, required this.size, required this.action});
+  const _SoundRow({required this.name, required this.size, required this.status});
   final String name;
   final String size;
-  final String action;
+  final String status;
   @override
   Widget build(BuildContext context) {
     final palette = MueenPalette.of(context);
-    return _SettingRow(icon: Icons.volume_up_rounded, title: name, detail: size, trailing: TextButton(onPressed: () {}, child: Text(action, style: TextStyle(color: palette.primary, fontWeight: FontWeight.w900))));
+    return _SettingRow(icon: Icons.volume_up_rounded, title: name, detail: size, trailing: _StatusPill(status));
   }
 }
 

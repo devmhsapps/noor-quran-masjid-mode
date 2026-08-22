@@ -629,9 +629,13 @@ class _MueenShellState extends State<MueenShell> {
     final preferences = await SharedPreferences.getInstance();
     await preferences.setString('prayer_location_profile', jsonEncode(location.toJson()));
     await preferences.setString('prayer_city', location.name);
-    await PrayerNotificationService.instance.scheduleForLocation(location);
-    PrayerCalendarSyncService.instance.syncCurrentAndNext(location).catchError((_) {});
     if (mounted) setState(() => _location = location);
+    try {
+      await PrayerNotificationService.instance.scheduleForLocation(location);
+    } catch (_) {
+      // لا تمنع مشكلة إشعار عابر حفظ المكان وحساب المواقيت محلياً.
+    }
+    PrayerCalendarSyncService.instance.syncCurrentAndNext(location).catchError((_) {});
   }
 
   void _openPage(Widget page) {
@@ -664,7 +668,12 @@ class _MueenShellState extends State<MueenShell> {
   Widget build(BuildContext context) {
     final screens = [
       _HomeTab(location: _location, onOpenMasjid: () => _openPage(const MasjidModeScreen()), onOpenPrayer: () => setState(() => _selectedIndex = 1), onOpenQuran: () => setState(() => _selectedIndex = 2)),
-      _PrayerTab(location: _location, onChooseCity: _chooseCity, onOpenQibla: () => _openPage(QiblaScreen(location: _location))),
+      _PrayerTab(
+        location: _location,
+        onChooseCity: _chooseCity,
+        onOpenQibla: () => _openPage(QiblaScreen(location: _location)),
+        onOpenCalendar: () => _openPage(const MueenCalendarScreen()),
+      ),
       const QuranTab(),
       _DhikrTab(onOpenReminders: () => _openPage(const ReminderScreen())),
       _MoreTab(
@@ -950,10 +959,11 @@ class _MoreTab extends StatelessWidget {
 }
 
 class _PrayerTab extends StatefulWidget {
-  const _PrayerTab({required this.location, required this.onChooseCity, required this.onOpenQibla});
+  const _PrayerTab({required this.location, required this.onChooseCity, required this.onOpenQibla, required this.onOpenCalendar});
   final PrayerLocation? location;
   final VoidCallback onChooseCity;
   final VoidCallback onOpenQibla;
+  final VoidCallback onOpenCalendar;
 
   @override
   State<_PrayerTab> createState() => _PrayerTabState();
@@ -1067,7 +1077,7 @@ class _PrayerTabState extends State<_PrayerTab> {
         Row(children: [
           Expanded(child: _PrayerQuickAction(icon: Icons.explore_outlined, label: 'القبلة', onTap: widget.onOpenQibla)),
           const SizedBox(width: 10),
-          Expanded(child: _PrayerQuickAction(icon: Icons.calendar_month_outlined, label: 'التقويم', onTap: () => _showGentleMessage(context, 'سيظهر التقويم الكامل والمناسبات في التحديث التالي.'))),
+          Expanded(child: _PrayerQuickAction(icon: Icons.calendar_month_outlined, label: 'التقويم', onTap: widget.onOpenCalendar)),
           const SizedBox(width: 10),
           Expanded(child: _PrayerQuickAction(icon: Icons.volume_off_outlined, label: 'وضع الجامع', onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const MasjidModeScreen())))),
         ]),
@@ -1132,7 +1142,7 @@ class _DhikrTab extends StatelessWidget {
         title: const Text('المسبحة', style: TextStyle(fontWeight: FontWeight.w900)),
         subtitle: const Text('عداد بسيط يحفظ تسبيحك محلياً.'),
         trailing: const Icon(Icons.chevron_left_rounded),
-        onTap: () => _showGentleMessage(context, 'ستظهر المسبحة الرقمية في هذه الصفحة.'),
+        onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const Directionality(textDirection: TextDirection.rtl, child: TasbihScreen()))),
       )),
     ]);
   }
@@ -1232,6 +1242,87 @@ class _ReminderItem {
   final String interval;
   bool enabled;
 }
+
+class TasbihScreen extends StatefulWidget {
+  const TasbihScreen({super.key});
+
+  @override
+  State<TasbihScreen> createState() => _TasbihScreenState();
+}
+
+class _TasbihScreenState extends State<TasbihScreen> {
+  int _count = 0;
+  int _target = 33;
+  String _phrase = 'سبحان الله';
+
+  @override
+  void initState() {
+    super.initState();
+    _restore();
+  }
+
+  Future<void> _restore() async {
+    final preferences = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _count = preferences.getInt('tasbih_count') ?? 0;
+      _target = preferences.getInt('tasbih_target') ?? 33;
+      _phrase = preferences.getString('tasbih_phrase') ?? 'سبحان الله';
+    });
+  }
+
+  Future<void> _save() async {
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setInt('tasbih_count', _count);
+    await preferences.setInt('tasbih_target', _target);
+    await preferences.setString('tasbih_phrase', _phrase);
+  }
+
+  void _increment() {
+    setState(() => _count++);
+    _save();
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        appBar: AppBar(title: const Text('المسبحة')),
+        body: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
+          child: Column(children: [
+            DropdownButtonFormField<String>(
+              value: _phrase,
+              items: const ['سبحان الله', 'الحمد لله', 'الله أكبر', 'لا إله إلا الله', 'اللهم صل على محمد'].map((item) => DropdownMenuItem(value: item, child: Text(item))).toList(),
+              onChanged: (value) {
+                if (value == null) return;
+                setState(() => _phrase = value);
+                _save();
+              },
+              decoration: const InputDecoration(labelText: 'الذكر'),
+            ),
+            const SizedBox(height: 16),
+            Expanded(child: Center(child: InkWell(
+              onTap: _increment,
+              borderRadius: BorderRadius.circular(180),
+              child: Container(
+                width: 270,
+                height: 270,
+                decoration: BoxDecoration(shape: BoxShape.circle, color: Theme.of(context).colorScheme.primary, boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.primary.withValues(alpha: .24), blurRadius: 30, offset: const Offset(0, 14))]),
+                child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  Text(_phrase, textAlign: TextAlign.center, style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontSize: 20, fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 16),
+                  Text('$_count', style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontSize: 72, fontWeight: FontWeight.w900)),
+                  Text('اضغط للتسبيح', style: TextStyle(color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: .84))),
+                ]),
+              ),
+            ))),
+            Row(children: [
+              Expanded(child: OutlinedButton(onPressed: () { setState(() => _count = 0); _save(); }, child: const Text('تصفير'))),
+              const SizedBox(width: 10),
+              Expanded(child: FilledButton(onPressed: () { setState(() => _target = _target == 33 ? 100 : 33); _save(); }, child: Text('الهدف: $_target'))),
+            ]),
+          ]),
+        ),
+      );
 
 class SupportScreen extends StatefulWidget {
   const SupportScreen({super.key});
