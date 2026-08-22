@@ -36,15 +36,24 @@ class _MueenAppState extends State<MueenApp> {
   @override
   void initState() {
     super.initState();
+    _restoreTheme();
     Timer(const Duration(milliseconds: 1550), () {
       if (mounted) setState(() => _booting = false);
     });
   }
 
+  Future<void> _restoreTheme() async {
+    final preferences = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() => _themeMode = (preferences.getBool('mueen_dark_mode') ?? false) ? ThemeMode.dark : ThemeMode.light);
+  }
+
   void _toggleTheme() {
+    final nextMode = _themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
     setState(() {
-      _themeMode = _themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
+      _themeMode = nextMode;
     });
+    SharedPreferences.getInstance().then((preferences) => preferences.setBool('mueen_dark_mode', nextMode == ThemeMode.dark));
   }
 
   @override

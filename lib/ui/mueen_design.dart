@@ -88,7 +88,7 @@ class _CircleAction extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = MueenPalette.of(context);
     return Material(
-      color: gold ? MueenColors.gold.withValues(alpha: .14) : palette.actionBackground,
+      color: gold ? palette.goldAccent.withValues(alpha: .14) : palette.actionBackground,
       shape: const CircleBorder(),
       child: InkWell(
         onTap: onTap,
@@ -96,7 +96,7 @@ class _CircleAction extends StatelessWidget {
         child: SizedBox(
           width: 42,
           height: 42,
-          child: Icon(icon, color: gold ? MueenColors.gold : palette.actionForeground, size: 21),
+          child: Icon(icon, color: gold ? palette.goldAccent : palette.actionForeground, size: 21),
         ),
       ),
     );
@@ -138,7 +138,11 @@ class MueenIconBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = MueenPalette.of(context);
-    final effectiveColor = color == MueenColors.forest && palette.isDark ? const Color(0xFFBDE9CC) : color;
+    final effectiveColor = color == MueenColors.forest && palette.isDark
+        ? palette.primary
+        : color == MueenColors.gold && palette.isDark
+            ? palette.goldAccent
+            : color;
     return Container(
       width: size,
       height: size,
