@@ -13,6 +13,7 @@ import 'features/mueen_feature_screens.dart';
 import 'prayer/prayer_calculator.dart';
 import 'prayer/location_service.dart';
 import 'prayer/night_fasting_screen.dart';
+import 'prayer/prayer_calendar_sync_service.dart';
 import 'prayer/prayer_notification_service.dart';
 import 'prayer/prayer_location.dart';
 import 'quran/quran_tab.dart';
@@ -629,6 +630,7 @@ class _MueenShellState extends State<MueenShell> {
     await preferences.setString('prayer_location_profile', jsonEncode(location.toJson()));
     await preferences.setString('prayer_city', location.name);
     await PrayerNotificationService.instance.scheduleForLocation(location);
+    PrayerCalendarSyncService.instance.syncCurrentAndNext(location).catchError((_) {});
     if (mounted) setState(() => _location = location);
   }
 
