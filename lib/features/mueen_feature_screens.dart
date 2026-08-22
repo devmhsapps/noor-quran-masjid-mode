@@ -1,23 +1,50 @@
 import 'package:flutter/material.dart';
 import 'package:hijri/hijri_calendar.dart';
 
+import '../prayer/place_catalog.dart';
+import '../prayer/prayer_location.dart';
 import '../prayer/prayer_notification_service.dart';
 import '../ui/mueen_design.dart';
 
 class MueenLocationScreen extends StatefulWidget {
-  const MueenLocationScreen({super.key, required this.initialCity, required this.onSave, required this.onAutoLocate});
-  final String initialCity;
-  final ValueChanged<String> onSave;
-  final Future<String> Function() onAutoLocate;
+  const MueenLocationScreen({super.key, required this.initialLocation, required this.onSave, required this.onAutoLocate});
+  final PrayerLocation initialLocation;
+  final ValueChanged<PrayerLocation> onSave;
+  final Future<PrayerLocation> Function() onAutoLocate;
 
   @override
   State<MueenLocationScreen> createState() => _MueenLocationScreenState();
 }
 
 class _MueenLocationScreenState extends State<MueenLocationScreen> {
-  late String _city = widget.initialCity == 'اختر المدينة' ? 'بغداد' : widget.initialCity;
-  final _cities = const ['بغداد', 'مكة المكرمة', 'المدينة المنورة', 'النجف', 'البصرة'];
+  late PrayerLocation _location = widget.initialLocation;
+  final _search = TextEditingController();
+  List<PrayerPlace> _results = const [];
   bool _locating = false;
+  bool _loadingCatalog = false;
+  bool _showManualPicker = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPlaces();
+  }
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadPlaces([String query = '']) async {
+    setState(() => _loadingCatalog = true);
+    try {
+      final results = await IraqPlaceCatalog.search(query);
+      if (mounted) setState(() => _results = results);
+    } finally {
+      if (mounted) setState(() => _loadingCatalog = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,20 +55,63 @@ class _MueenLocationScreenState extends State<MueenLocationScreen> {
         body: ListView(padding: const EdgeInsets.fromLTRB(20, 14, 20, 28), children: [
           _HeroPanel(
             eyebrow: 'المدينة الحالية',
-            title: _city,
-            body: 'تستخدم المدينة لحساب المواقيت والقبلة، ولا تحفظ إلا على جهازك.',
+            title: _location.name,
+            body: _location.source == PrayerLocationSource.gps ? 'المواقيت محسوبة من إحداثيات GPS الحالية، وتحفظ على جهازك.' : 'المكان المختار محفوظ محلياً لحساب المواقيت والقبلة.',
             icon: Icons.location_on_rounded,
           ),
           const MueenSectionLabel(title: 'اختيار الموقع'),
           MueenSurface(child: Column(children: [
-            _SettingRow(icon: _locating ? Icons.location_searching_rounded : Icons.my_location_rounded, title: _locating ? 'يجري تحديد موقعك…' : 'استخدام موقعي تلقائياً', detail: 'يطلب الإذن عند الضغط فقط', trailing: const _StatusPill('اختياري'), onTap: _locating ? null : _autoLocate),
+            _SettingRow(icon: _locating ? Icons.location_searching_rounded : Icons.my_location_rounded, title: _locating ? 'يجري تحديد موقعك…' : 'استخدام موقعي تلقائياً', detail: 'GPS دقيق؛ يطلب الإذن عند الضغط فقط', trailing: const _StatusPill('اختياري'), onTap: _locating ? null : _autoLocate),
             Divider(color: palette.line),
-            _SettingRow(icon: Icons.location_city_rounded, title: 'اختيار مدينة يدوياً', detail: _city, onTap: _showCities),
+            _SettingRow(icon: Icons.location_city_rounded, title: 'اختيار المكان يدوياً', detail: _location.name, onTap: () => setState(() => _showManualPicker = !_showManualPicker)),
             Divider(color: palette.line),
-            const _SettingRow(icon: Icons.tune_rounded, title: 'طريقة الحساب', detail: 'محلية حسب المدينة', trailing: _StatusPill('محلي')),
+            const _SettingRow(icon: Icons.tune_rounded, title: 'طريقة الحساب', detail: 'محلية بالإحداثيات • التقويم المرجعي اختياري', trailing: _StatusPill('محلي')),
           ])),
+          if (_showManualPicker) ...[
+            const MueenSectionLabel(title: 'دليل العراق المحلي'),
+            MueenSurface(child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(children: [
+                TextField(
+                  controller: _search,
+                  onChanged: _loadPlaces,
+                  textDirection: TextDirection.rtl,
+                  decoration: InputDecoration(
+                    hintText: 'ابحث عن مدينة أو قضاء أو ناحية',
+                    prefixIcon: const Icon(Icons.search_rounded),
+                    filled: true,
+                    fillColor: palette.surfaceSoft,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  height: 300,
+                  child: _loadingCatalog
+                      ? const Center(child: CircularProgressIndicator())
+                      : ListView.separated(
+                          itemCount: _results.length,
+                          separatorBuilder: (_, __) => Divider(color: palette.line),
+                          itemBuilder: (context, index) {
+                            final place = _results[index];
+                            return ListTile(
+                              dense: true,
+                              leading: const Icon(Icons.location_on_outlined),
+                              title: Text(place.name, style: const TextStyle(fontWeight: FontWeight.w900)),
+                              subtitle: Text(place.fallbackName),
+                              onTap: () => setState(() {
+                                _location = place.toPrayerLocation();
+                                _showManualPicker = false;
+                              }),
+                            );
+                          },
+                        ),
+                ),
+              ]),
+            )),
+          ],
           const SizedBox(height: 18),
-          FilledButton(onPressed: () { widget.onSave(_city); Navigator.pop(context); }, style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(54), backgroundColor: palette.primaryStrong, foregroundColor: palette.actionForeground, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(17))), child: const Text('حفظ الاختيار', style: TextStyle(fontWeight: FontWeight.w900))),
+          FilledButton(onPressed: () { widget.onSave(_location); Navigator.pop(context); }, style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(54), backgroundColor: palette.primaryStrong, foregroundColor: palette.actionForeground, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(17))), child: const Text('حفظ الاختيار', style: TextStyle(fontWeight: FontWeight.w900))),
         ]),
       );
   }
@@ -49,10 +119,10 @@ class _MueenLocationScreenState extends State<MueenLocationScreen> {
   Future<void> _autoLocate() async {
     setState(() => _locating = true);
     try {
-      final city = await widget.onAutoLocate();
+      final location = await widget.onAutoLocate();
       if (!mounted) return;
-      setState(() => _city = city);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تم تحديد أقرب مدينة: $city')));
+      setState(() => _location = location);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم تحديد إحداثيات موقعك بدقة.')));
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.toString())));
@@ -61,17 +131,6 @@ class _MueenLocationScreenState extends State<MueenLocationScreen> {
     }
   }
 
-  void _showCities() => showDialog<void>(
-        context: context,
-        builder: (dialogContext) => Directionality(
-          textDirection: TextDirection.rtl,
-          child: AlertDialog(
-            title: const Text('اختيار مدينة'),
-            content: Wrap(spacing: 8, runSpacing: 8, children: _cities.map((city) => ChoiceChip(label: Text(city), selected: city == _city, onSelected: (_) { setState(() => _city = city); Navigator.pop(dialogContext); })).toList()),
-            actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('إلغاء'))],
-          ),
-        ),
-      );
 }
 
 class PrayerRemindersScreen extends StatefulWidget {

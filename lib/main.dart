@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:hijri/hijri_calendar.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -12,6 +14,7 @@ import 'prayer/prayer_calculator.dart';
 import 'prayer/location_service.dart';
 import 'prayer/night_fasting_screen.dart';
 import 'prayer/prayer_notification_service.dart';
+import 'prayer/prayer_location.dart';
 import 'quran/quran_tab.dart';
 import 'ui/mueen_design.dart';
 import 'widgets/islamic_background.dart';
@@ -588,25 +591,45 @@ class MueenShell extends StatefulWidget {
 class _MueenShellState extends State<MueenShell> {
   final _scaffoldKey = GlobalKey<ScaffoldState>();
   int _selectedIndex = 0;
-  String _city = 'اختر المدينة';
+  PrayerLocation? _location;
 
   @override
   void initState() {
     super.initState();
-    _restoreCity();
+    _restoreLocation();
   }
 
-  Future<void> _restoreCity() async {
+  Future<void> _restoreLocation() async {
     final preferences = await SharedPreferences.getInstance();
-    final saved = preferences.getString('prayer_city');
-    if (saved != null && mounted) setState(() => _city = saved);
+    final savedProfile = preferences.getString('prayer_location_profile');
+    if (savedProfile != null) {
+      try {
+        final saved = PrayerLocation.fromJson((jsonDecode(savedProfile) as Map).cast<String, Object?>());
+        if (mounted) setState(() => _location = saved);
+        return;
+      } catch (_) {}
+    }
+    final legacyCity = preferences.getString('prayer_city');
+    final legacy = PrayerCalculator.cities.where((item) => item.name == legacyCity).cast<PrayerCity?>().firstOrNull;
+    if (legacy != null && mounted) {
+      setState(() => _location = PrayerLocation(
+        id: 'legacy-${legacy.name}',
+        name: legacy.name,
+        country: 'موقع محفوظ',
+        latitude: legacy.latitude,
+        longitude: legacy.longitude,
+        timezone: legacy.name == 'مكة المكرمة' || legacy.name == 'المدينة المنورة' ? 'Asia/Riyadh' : 'Asia/Baghdad',
+        utcOffset: legacy.utcOffset,
+      ));
+    }
   }
 
-  Future<void> _saveCity(String city) async {
+  Future<void> _saveLocation(PrayerLocation location) async {
     final preferences = await SharedPreferences.getInstance();
-    await preferences.setString('prayer_city', city);
-    await PrayerNotificationService.instance.scheduleNext24Hours(city);
-    if (mounted) setState(() => _city = city);
+    await preferences.setString('prayer_location_profile', jsonEncode(location.toJson()));
+    await preferences.setString('prayer_city', location.name);
+    await PrayerNotificationService.instance.scheduleForLocation(location);
+    if (mounted) setState(() => _location = location);
   }
 
   void _openPage(Widget page) {
@@ -614,24 +637,32 @@ class _MueenShellState extends State<MueenShell> {
   }
 
   void _chooseCity() => _openPage(MueenLocationScreen(
-        initialCity: _city,
-        onSave: _saveCity,
-        onAutoLocate: () async => (await PrayerLocationService().detectNearestCity()).name,
+        initialLocation: _location ?? const PrayerLocation(
+          id: 'default-baghdad',
+          name: 'بغداد',
+          country: 'العراق',
+          latitude: 33.3152,
+          longitude: 44.3661,
+          timezone: 'Asia/Baghdad',
+          utcOffset: Duration(hours: 3),
+        ),
+        onSave: _saveLocation,
+        onAutoLocate: () => PrayerLocationService().detectCurrentLocation(),
       ));
 
   Future<void> _openNightFasting() async {
-    if (_city == 'اختر المدينة') {
+    if (_location == null) {
       _chooseCity();
       return;
     }
-    _openPage(NightFastingScreen(city: _city));
+    _openPage(NightFastingScreen(location: _location!));
   }
 
   @override
   Widget build(BuildContext context) {
     final screens = [
-      _HomeTab(city: _city, onOpenMasjid: () => _openPage(const MasjidModeScreen()), onOpenPrayer: () => setState(() => _selectedIndex = 1), onOpenQuran: () => setState(() => _selectedIndex = 2)),
-      _PrayerTab(city: _city, onChooseCity: _chooseCity),
+      _HomeTab(location: _location, onOpenMasjid: () => _openPage(const MasjidModeScreen()), onOpenPrayer: () => setState(() => _selectedIndex = 1), onOpenQuran: () => setState(() => _selectedIndex = 2)),
+      _PrayerTab(location: _location, onChooseCity: _chooseCity),
       const QuranTab(),
       _DhikrTab(onOpenReminders: () => _openPage(const ReminderScreen())),
       _MoreTab(
@@ -639,13 +670,21 @@ class _MueenShellState extends State<MueenShell> {
         onOpenSupport: () => _openPage(const SupportScreen()),
         onOpenSupportUs: () => _openPage(const SupportUsScreen()),
         onOpenLocation: () => _openPage(MueenLocationScreen(
-          initialCity: _city,
-          onSave: _saveCity,
-          onAutoLocate: () async => (await PrayerLocationService().detectNearestCity()).name,
+          initialLocation: _location ?? const PrayerLocation(
+            id: 'default-baghdad',
+            name: 'بغداد',
+            country: 'العراق',
+            latitude: 33.3152,
+            longitude: 44.3661,
+            timezone: 'Asia/Baghdad',
+            utcOffset: Duration(hours: 3),
+          ),
+          onSave: _saveLocation,
+          onAutoLocate: () => PrayerLocationService().detectCurrentLocation(),
         )),
         onOpenPrayerReminders: () => _openPage(PrayerRemindersScreen(
           onSaved: () async {
-            if (_city != 'اختر المدينة') await PrayerNotificationService.instance.scheduleNext24Hours(_city);
+            if (_location != null) await PrayerNotificationService.instance.scheduleForLocation(_location!);
           },
         )),
         onOpenAdhan: () => _openPage(const AdhanSelectionScreen()),
@@ -767,8 +806,8 @@ class _BottomNavItem {
 }
 
 class _HomeTab extends StatelessWidget {
-  const _HomeTab({required this.city, required this.onOpenMasjid, required this.onOpenPrayer, required this.onOpenQuran});
-  final String city;
+  const _HomeTab({required this.location, required this.onOpenMasjid, required this.onOpenPrayer, required this.onOpenQuran});
+  final PrayerLocation? location;
   final VoidCallback onOpenMasjid;
   final VoidCallback onOpenPrayer;
   final VoidCallback onOpenQuran;
@@ -777,7 +816,7 @@ class _HomeTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final palette = MueenPalette.of(context);
-    final schedule = PrayerCalculator.forCity(city);
+    final schedule = location == null ? null : PrayerCalculator.forLocation(location!);
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 10, 20, 28),
       children: [
@@ -788,7 +827,7 @@ class _HomeTab extends StatelessWidget {
         const SizedBox(height: 3),
         Text('رفيقك اليومي للقرآن والصلاة', style: TextStyle(color: palette.muted, fontWeight: FontWeight.w700)),
         const SizedBox(height: 14),
-        _PrayerHeroCard(schedule: schedule, city: city, onOpenPrayer: onOpenPrayer),
+        _PrayerHeroCard(schedule: schedule, city: location?.name ?? 'أكمل إعداد المكان', onOpenPrayer: onOpenPrayer),
         const SizedBox(height: 13),
         Row(children: [
           Expanded(child: _ActionTile(icon: Icons.volume_off_rounded, title: 'وضع الجامع', subtitle: 'هدوء مؤقت', onTap: onOpenMasjid)),
@@ -909,8 +948,8 @@ class _MoreTab extends StatelessWidget {
 }
 
 class _PrayerTab extends StatefulWidget {
-  const _PrayerTab({required this.city, required this.onChooseCity});
-  final String city;
+  const _PrayerTab({required this.location, required this.onChooseCity});
+  final PrayerLocation? location;
   final VoidCallback onChooseCity;
 
   @override
@@ -940,7 +979,7 @@ class _PrayerTabState extends State<_PrayerTab> {
     final months = ['محرم', 'صفر', 'ربيع الأول', 'ربيع الآخر', 'جمادى الأولى', 'جمادى الآخرة', 'رجب', 'شعبان', 'رمضان', 'شوال', 'ذو القعدة', 'ذو الحجة'];
     final now = DateTime.now();
     final theme = Theme.of(context);
-    final schedule = PrayerCalculator.forCity(widget.city, now: now);
+    final schedule = widget.location == null ? null : PrayerCalculator.forLocation(widget.location!, now: now);
     return ListView(padding: const EdgeInsets.fromLTRB(20, 12, 20, 24), children: [
       Row(children: [
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -954,7 +993,7 @@ class _PrayerTabState extends State<_PrayerTab> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
             decoration: BoxDecoration(color: theme.colorScheme.primary.withValues(alpha: .10), borderRadius: BorderRadius.circular(18)),
-            child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.location_on_outlined, color: theme.colorScheme.primary, size: 18), const SizedBox(width: 4), Text(widget.city, style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.w900, fontSize: 12))]),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.location_on_outlined, color: theme.colorScheme.primary, size: 18), const SizedBox(width: 4), Text(widget.location?.name ?? 'اختيار المكان', style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.w900, fontSize: 12))]),
           ),
         ),
       ]),
@@ -994,7 +1033,7 @@ class _PrayerTabState extends State<_PrayerTab> {
               const SizedBox(height: 14),
               ClipRRect(borderRadius: BorderRadius.circular(10), child: LinearProgressIndicator(value: _dayProgress(now), minHeight: 7, backgroundColor: const Color(0x33FFFFFF), valueColor: const AlwaysStoppedAnimation(Color(0xFFE4B85F)))),
               const SizedBox(height: 10),
-              const Text('حساب محلي • كراتشي • العصر حنفي', style: TextStyle(color: Color(0xDDF8F5EE), fontSize: 12, fontWeight: FontWeight.w700)),
+              Text(widget.location?.source == PrayerLocationSource.gps ? 'GPS • حساب محلي بالإحداثيات • العصر حنفي' : 'حساب محلي بالإحداثيات • العصر حنفي', style: const TextStyle(color: Color(0xDDF8F5EE), fontSize: 12, fontWeight: FontWeight.w700)),
             ]),
           ]),
         ),

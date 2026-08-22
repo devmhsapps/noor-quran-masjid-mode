@@ -1,5 +1,7 @@
 import 'package:adhan/adhan.dart';
 
+import 'prayer_location.dart';
+
 class PrayerCity {
   const PrayerCity({
     required this.name,
@@ -66,7 +68,20 @@ class PrayerCalculator {
   static PrayerSchedule? forCity(String cityName, {DateTime? now}) {
     final city = cities.where((item) => item.name == cityName).cast<PrayerCity?>().firstOrNull;
     if (city == null) return null;
-    final current = now ?? DateTime.now();
+    return _scheduleFor(city, now ?? DateTime.now());
+  }
+
+  static PrayerSchedule forLocation(PrayerLocation location, {DateTime? now}) {
+    final city = PrayerCity(
+      name: location.name,
+      latitude: location.latitude,
+      longitude: location.longitude,
+      utcOffset: location.utcOffset,
+    );
+    return _scheduleFor(city, now ?? DateTime.now());
+  }
+
+  static PrayerSchedule _scheduleFor(PrayerCity city, DateTime current) {
     final today = _timesFor(city, current);
     final tomorrow = _timesFor(city, current.add(const Duration(days: 1)));
     final entries = _entriesFor(today);
@@ -77,7 +92,20 @@ class PrayerCalculator {
   static NightFastingInfo? nightFastingForCity(String cityName, {DateTime? now}) {
     final city = cities.where((item) => item.name == cityName).cast<PrayerCity?>().firstOrNull;
     if (city == null) return null;
-    final current = now ?? DateTime.now();
+    return _nightFastingFor(city, now ?? DateTime.now());
+  }
+
+  static NightFastingInfo nightFastingForLocation(PrayerLocation location, {DateTime? now}) {
+    final city = PrayerCity(
+      name: location.name,
+      latitude: location.latitude,
+      longitude: location.longitude,
+      utcOffset: location.utcOffset,
+    );
+    return _nightFastingFor(city, now ?? DateTime.now());
+  }
+
+  static NightFastingInfo _nightFastingFor(PrayerCity city, DateTime current) {
     final today = _timesFor(city, current);
     final tomorrow = _timesFor(city, current.add(const Duration(days: 1)));
     final nightDuration = tomorrow.fajr.difference(today.maghrib);

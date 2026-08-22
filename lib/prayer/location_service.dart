@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'package:geolocator/geolocator.dart';
 
+import 'prayer_location.dart';
+
 class LocalPrayerCity {
   const LocalPrayerCity({required this.name, required this.latitude, required this.longitude});
   final String name;
@@ -19,6 +21,30 @@ class PrayerLocationService {
   ];
 
   Future<LocalPrayerCity> detectNearestCity() async {
+    final position = await _currentPosition();
+    return supportedCities.reduce((nearest, candidate) {
+      final nearestDistance = _distance(position.latitude, position.longitude, nearest.latitude, nearest.longitude);
+      final candidateDistance = _distance(position.latitude, position.longitude, candidate.latitude, candidate.longitude);
+      return candidateDistance < nearestDistance ? candidate : nearest;
+    });
+  }
+
+  Future<PrayerLocation> detectCurrentLocation() async {
+    final position = await _currentPosition();
+    final offset = DateTime.now().timeZoneOffset;
+    return PrayerLocation(
+      id: 'gps-${position.latitude.toStringAsFixed(5)}-${position.longitude.toStringAsFixed(5)}',
+      name: 'موقعي الحالي',
+      country: 'تحديد تلقائي',
+      latitude: position.latitude,
+      longitude: position.longitude,
+      timezone: 'Asia/Baghdad',
+      utcOffset: offset,
+      source: PrayerLocationSource.gps,
+    );
+  }
+
+  Future<Position> _currentPosition() async {
     if (!await Geolocator.isLocationServiceEnabled()) {
       throw const PrayerLocationException('فعّل GPS من إعدادات الهاتف ثم حاول مرة أخرى.');
     }
@@ -32,14 +58,9 @@ class PrayerLocationService {
     if (permission == LocationPermission.denied) {
       throw const PrayerLocationException('لم تمنح إذن الموقع. يمكنك اختيار مدينة يدوياً.');
     }
-    final position = await Geolocator.getCurrentPosition(
-      locationSettings: const LocationSettings(accuracy: LocationAccuracy.medium),
+    return Geolocator.getCurrentPosition(
+      locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
     );
-    return supportedCities.reduce((nearest, candidate) {
-      final nearestDistance = _distance(position.latitude, position.longitude, nearest.latitude, nearest.longitude);
-      final candidateDistance = _distance(position.latitude, position.longitude, candidate.latitude, candidate.longitude);
-      return candidateDistance < nearestDistance ? candidate : nearest;
-    });
   }
 
   double _distance(double lat1, double lon1, double lat2, double lon2) {

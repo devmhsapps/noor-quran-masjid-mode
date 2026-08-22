@@ -4,6 +4,7 @@ import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
 import 'prayer_calculator.dart';
+import 'prayer_location.dart';
 
 class PrayerNotificationService {
   PrayerNotificationService._();
@@ -54,15 +55,35 @@ class PrayerNotificationService {
     String cityName, {
     PrayerReminderSettings? settings,
   }) async {
+    final city = PrayerCalculator.cities.where((item) => item.name == cityName).cast<PrayerCity?>().firstOrNull;
+    if (city == null) return;
+    await scheduleForLocation(
+      PrayerLocation(
+        id: 'legacy-$cityName',
+        name: city.name,
+        country: 'موقع محفوظ',
+        latitude: city.latitude,
+        longitude: city.longitude,
+        timezone: _timeZoneFor(cityName),
+        utcOffset: city.utcOffset,
+      ),
+      settings: settings,
+    );
+  }
+
+  Future<void> scheduleForLocation(
+    PrayerLocation prayerLocation, {
+    PrayerReminderSettings? settings,
+  }) async {
     await initialize();
     final activeSettings = settings ?? await PrayerReminderSettingsStore.load();
-    final location = tz.getLocation(_timeZoneFor(cityName));
+    final location = tz.getLocation(prayerLocation.timezone);
     final now = DateTime.now();
     final moments = <PrayerMoment>[];
     for (var dayOffset = 0; dayOffset <= 1; dayOffset++) {
       final date = DateTime(now.year, now.month, now.day).add(Duration(days: dayOffset));
-      final schedule = PrayerCalculator.forCity(cityName, now: date);
-      if (schedule != null) moments.addAll(schedule.entries.where((entry) => entry.time.isAfter(now)));
+      final schedule = PrayerCalculator.forLocation(prayerLocation, now: date);
+      moments.addAll(schedule.entries.where((entry) => entry.time.isAfter(now)));
     }
     moments.sort((a, b) => a.time.compareTo(b.time));
     for (var index = 0; index < 40; index++) {

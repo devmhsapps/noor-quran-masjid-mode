@@ -29,6 +29,7 @@ flutter:
   assets:
     - assets/images/app_icon.png
     - assets/data/quran.json
+    - assets/data/iraq_places.json
   fonts:
     - family: AmiriQuran
       fonts:

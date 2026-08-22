@@ -3,12 +3,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import 'prayer_calculator.dart';
+import 'prayer_location.dart';
 import '../ui/mueen_design.dart';
 
 class NightFastingScreen extends StatefulWidget {
-  const NightFastingScreen({super.key, required this.city});
+  const NightFastingScreen({super.key, required this.location});
 
-  final String city;
+  final PrayerLocation location;
 
   @override
   State<NightFastingScreen> createState() => _NightFastingScreenState();
@@ -36,13 +37,11 @@ class _NightFastingScreenState extends State<NightFastingScreen> {
     final theme = Theme.of(context);
     final palette = MueenPalette.of(context);
     final now = DateTime.now();
-    final info = PrayerCalculator.nightFastingForCity(widget.city, now: now);
+    final info = PrayerCalculator.nightFastingForLocation(widget.location, now: now);
     return Scaffold(
       backgroundColor: palette.background,
       appBar: AppBar(title: const Text('ليلتي وصيامي')),
-      body: info == null
-          ? _NoCity(onBack: () => Navigator.pop(context))
-          : ListView(
+      body: ListView(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
               children: [
                 _NightHero(city: info.city.name, now: now, info: info),
