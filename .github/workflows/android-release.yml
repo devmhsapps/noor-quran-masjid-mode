@@ -41,6 +41,30 @@ jobs:
             sed -i '/targetCompatibility JavaVersion.VERSION_/a\        coreLibraryDesugaringEnabled true' android/app/build.gradle
             printf '\ndependencies {\n    coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:2.1.5"\n}\n' >> android/app/build.gradle
           fi
+      - name: Configure persistent Android release signing
+        env:
+          MUEEN_ANDROID_KEYSTORE_BASE64: ${{ secrets.MUEEN_ANDROID_KEYSTORE_BASE64 }}
+          MUEEN_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.MUEEN_ANDROID_KEYSTORE_PASSWORD }}
+          MUEEN_ANDROID_KEY_ALIAS: ${{ secrets.MUEEN_ANDROID_KEY_ALIAS }}
+          MUEEN_ANDROID_KEY_PASSWORD: ${{ secrets.MUEEN_ANDROID_KEY_PASSWORD }}
+        run: |
+          test -n "$MUEEN_ANDROID_KEYSTORE_BASE64"
+          printf '%s' "$MUEEN_ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/mueen-release.jks
+          cat > android/key.properties <<EOF
+          storePassword=$MUEEN_ANDROID_KEYSTORE_PASSWORD
+          keyPassword=$MUEEN_ANDROID_KEY_PASSWORD
+          keyAlias=$MUEEN_ANDROID_KEY_ALIAS
+          storeFile=mueen-release.jks
+          EOF
+          if [ -f android/app/build.gradle.kts ]; then
+            sed -i '/^android {/i\val keystoreProperties = java.util.Properties()\nval keystorePropertiesFile = rootProject.file("key.properties")\nif (keystorePropertiesFile.exists()) {\n    keystoreProperties.load(java.io.FileInputStream(keystorePropertiesFile))\n}\n' android/app/build.gradle.kts
+            sed -i '/^[[:space:]]*buildTypes {/i\    signingConfigs {\n        create("release") {\n            keyAlias = keystoreProperties["keyAlias"] as String\n            keyPassword = keystoreProperties["keyPassword"] as String\n            storeFile = file(keystoreProperties["storeFile"] as String)\n            storePassword = keystoreProperties["storePassword"] as String\n        }\n    }\n' android/app/build.gradle.kts
+            sed -i 's/signingConfig = signingConfigs.getByName("debug")/signingConfig = signingConfigs.getByName("release")/' android/app/build.gradle.kts
+          else
+            sed -i '/^android {/i\def keystoreProperties = new Properties()\ndef keystorePropertiesFile = rootProject.file("key.properties")\nif (keystorePropertiesFile.exists()) {\n    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))\n}\n' android/app/build.gradle
+            sed -i '/^[[:space:]]*buildTypes {/i\    signingConfigs {\n        release {\n            keyAlias keystoreProperties["keyAlias"]\n            keyPassword keystoreProperties["keyPassword"]\n            storeFile file(keystoreProperties["storeFile"])\n            storePassword keystoreProperties["storePassword"]\n        }\n    }\n' android/app/build.gradle
+            sed -i 's/signingConfig signingConfigs.debug/signingConfig signingConfigs.release/' android/app/build.gradle
+          fi
       - name: Install dependencies and run tests
         run: |
           flutter pub get
